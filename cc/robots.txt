@@ -1,3 +1,0 @@
-User-agent: *
-Disallow: /slides/
-Sitemap: https://zygoloid.github.io/cc/sitemap.xml
