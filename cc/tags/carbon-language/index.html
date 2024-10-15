@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8" />
+
+<title>Carbon Language -Coding in Old Entish</title>
+
+<meta
+  name="keywords"
+  content="programming,coding,languages,programming languages,compilers,performance,cpus,tech,"
+/>
+<meta name="author" content="" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#1b1b28" />
+<meta name="msapplication-TileColor" content="#1b1b28" />
+
+<link rel="canonical" href="https://zygoloid.github.io/cc/tags/carbon-language/" />
+
+<link rel="me" href="https://hachyderm.io/@chandlerc" />
+
+<link
+      rel="alternate"
+      href="https://zygoloid.github.io/cc/tags/carbon-language/index.xml"
+      type="application/rss+xml"
+    />
+
+<link rel="icon" href="../../favicon.ico" />
+<link rel="icon" href="../../favicon-16x16.png" type="image/png" sizes="16x16" />
+<link rel="icon" href="../../favicon-32x32.png" type="image/png" sizes="32x32" />
+<link rel="apple-touch-icon" href="../../apple-touch-icon.png" />
+<link rel="mask-icon" href="../../safari-pinned-tab.svg" />
+
+<link
+  rel="preload"
+  href="../../cc/fonts/open_sans/OpenSans-VariableFont_wdth,wght.9f637b868d10819aa0085e6cf7f70953411c8905c4055c069adbe8acc708feef.woff2"
+  as="font"
+  type="font/woff2"
+  crossorigin
+/>
+
+<link
+  rel="preload stylesheet"
+  href="../../cc/css/stylesheet.min.bcdb466112b343cc3d759d5f758f2c71aa35419c8edab9e5d82481cfa283feaa.css"
+  as="style"
+  integrity="sha256-vNtGYRKzQ8w9dZ1fdY8scao1QZyO2rnl2CSBz6KD/qo="
+  crossorigin
+/><script
+  src="../../cc/js/scripts.min.3abf59a79d74ae0e115f2ca793e3e4d0f2d62d936ba3bef280adb69d14af0154.js"
+  integrity="sha256-Or9Zp510rg4RXyynk&#43;Pk0PLWLZNro77ygK22nRSvAVQ="
+  crossorigin
+></script>
+<script>
+  hljs.registerLanguage('Carbon', carbonLang);
+  hljs.highlightAll();
+</script><meta property="og:title" content="Carbon Language" />
+<meta property="og:description" content="Chandler&#39;s blog about programming, languages, compilers, performance, cpus, tech, and everything else." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://zygoloid.github.io/cc/tags/carbon-language/" />
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Carbon Language"/>
+<meta name="twitter:description" content="Chandler&#39;s blog about programming, languages, compilers, performance, cpus, tech, and everything else."/>
+
+</head>
+
+<body class="list dark" id="top">
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://zygoloid.github.io/cc/" accesskey="h" title="Coding in Old Entish (Alt + H)">Coding in Old Entish</a>
+            <div class="logo-switches">
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://zygoloid.github.io/cc/about" title="About">
+                    <span>About</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://zygoloid.github.io/cc/tags" title="Tags">
+                    <span>Tags</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://zygoloid.github.io/cc/archives" title="Archives">
+                    <span>Archives</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main"> 
+<header class="page-header">
+  <h1>
+    Carbon Language
+    <a href="index.xml" title="RSS" aria-label="RSS">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" height="23">
+        <path d="M4 11a9 9 0 0 1 9 9" />
+        <path d="M4 4a16 16 0 0 1 16 16" />
+        <circle cx="5" cy="19" r="1" />
+      </svg>
+    </a>
+  </h1>
+</header>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
+    <h2>The little things #1: Access control
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>This post is part of a series looking at little details of programming language design, mostly in the context of Carbon. Check out the series intro post for context and other entries.
+Let’s talk about public vs. private! Folks who know C&#43;&#43; may be familiar with these concepts, but here is a quick example:
+class MyType { public: void MyPublicFunction(); private: void InternalDetail(); }; One of the things that has always been frustrating to me are exactly how public and private work here....</p>
+  </div>
+  <footer class="entry-footer"><span title='2023-03-26 00:24:16 -0700 -0700'>March 26, 2023</span>&nbsp;·&nbsp;805 words</footer>
+  <a class="entry-link" aria-label="post link to The little things #1: Access control" href="https://zygoloid.github.io/cc/posts/little_things_1_access/"></a>
+</article>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
+    <h2>The little things in languages
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>Working on a programming language is one of the most challenging and open ended design spaces that I have ever tried to operate in, both for existing and brand new languages. There are very few bounds or constraints on the solution space to help guide and direct my thinking. Everything is ambiguous and open ended with endless possibilities. It sounds great to me… until I need to make progress. Then… not so much....</p>
+  </div>
+  <footer class="entry-footer"><span title='2023-03-26 00:23:16 -0700 -0700'>March 26, 2023</span>&nbsp;·&nbsp;250 words</footer>
+  <a class="entry-link" aria-label="post link to The little things in languages" href="https://zygoloid.github.io/cc/posts/little_things_series/"></a>
+</article>
+    </main>
+    
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a><footer class="footer">
+  Except as otherwise noted, the content of this page is licensed under
+  <a rel="license" href="https://creativecommons.org/licenses/by/4.0/legalcode">
+    CC-BY 4.0</a>,<br class="over-width-475"/>
+  and code samples are licensed under
+  <a rel="license" href="../../LICENSE.md">the LLVM license</a>.
+</footer>
+
+<script>
+  mediumZoom(document.querySelectorAll('.post-single img'), {
+    background: 'var(--bg1)',
+  });
+</script>
+
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+</body>
+
+</html>

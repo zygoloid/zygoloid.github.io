@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8" />
+
+<title>Improving the user-facing Carbon Explorer output -Coding in Old Entish</title>
+
+<meta
+  name="keywords"
+  content="programming,coding,languages,programming languages,compilers,performance,cpus,tech,"
+/>
+<meta name="author" content="Prabhat Sachdeva" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#1b1b28" />
+<meta name="msapplication-TileColor" content="#1b1b28" />
+
+<link rel="canonical" href="https://zygoloid.github.io/cc/posts/2023/11/improving_carbon_explorer_output/" />
+
+<link rel="me" href="https://hachyderm.io/@chandlerc" />
+
+
+
+<link rel="icon" href="../../../../favicon.ico" />
+<link rel="icon" href="../../../../favicon-16x16.png" type="image/png" sizes="16x16" />
+<link rel="icon" href="../../../../favicon-32x32.png" type="image/png" sizes="32x32" />
+<link rel="apple-touch-icon" href="../../../../apple-touch-icon.png" />
+<link rel="mask-icon" href="../../../../safari-pinned-tab.svg" />
+
+<link
+  rel="preload"
+  href="../../../../cc/fonts/open_sans/OpenSans-VariableFont_wdth,wght.9f637b868d10819aa0085e6cf7f70953411c8905c4055c069adbe8acc708feef.woff2"
+  as="font"
+  type="font/woff2"
+  crossorigin
+/>
+
+<link
+  rel="preload stylesheet"
+  href="../../../../cc/css/stylesheet.min.bcdb466112b343cc3d759d5f758f2c71aa35419c8edab9e5d82481cfa283feaa.css"
+  as="style"
+  integrity="sha256-vNtGYRKzQ8w9dZ1fdY8scao1QZyO2rnl2CSBz6KD/qo="
+  crossorigin
+/><script
+  src="../../../../cc/js/scripts.min.3abf59a79d74ae0e115f2ca793e3e4d0f2d62d936ba3bef280adb69d14af0154.js"
+  integrity="sha256-Or9Zp510rg4RXyynk&#43;Pk0PLWLZNro77ygK22nRSvAVQ="
+  crossorigin
+></script>
+<script>
+  hljs.registerLanguage('Carbon', carbonLang);
+  hljs.highlightAll();
+</script><meta property="og:title" content="Improving the user-facing Carbon Explorer output" />
+<meta property="og:description" content="Note: This is the first of two guest blog posts from Carbon&rsquo;s Google-Summer-of-Code contributors this year.
+Carbon Explorer is a prototype interpreter for Carbon whose primary purpose is to act as a clear executable specification of the language. It can also be used as a platform for prototyping and validating changes to the language. Its intended audience is people working on the design of Carbon, and it is not intended for real-world Carbon programming on any scale." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://zygoloid.github.io/cc/posts/2023/11/improving_carbon_explorer_output/" />
+<meta property="og:image" content="https://zygoloid.github.io/cc/illustration.png" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2023-11-21T00:00:00+00:00" />
+<meta property="article:modified_time" content="2023-11-21T00:00:00+00:00" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:image" content="https://zygoloid.github.io/cc/illustration.png" />
+<meta name="twitter:title" content="Improving the user-facing Carbon Explorer output"/>
+<meta name="twitter:description" content="Note: This is the first of two guest blog posts from Carbon&rsquo;s Google-Summer-of-Code contributors this year.
+Carbon Explorer is a prototype interpreter for Carbon whose primary purpose is to act as a clear executable specification of the language. It can also be used as a platform for prototyping and validating changes to the language. Its intended audience is people working on the design of Carbon, and it is not intended for real-world Carbon programming on any scale."/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://zygoloid.github.io/cc/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "Improving the user-facing Carbon Explorer output",
+      "item": "https://zygoloid.github.io/cc/posts/2023/11/improving_carbon_explorer_output/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Improving the user-facing Carbon Explorer output",
+  "name": "Improving the user-facing Carbon Explorer output",
+  "description": "Note: This is the first of two guest blog posts from Carbon\u0026rsquo;s Google-Summer-of-Code contributors this year.\nCarbon Explorer is a prototype interpreter for Carbon whose primary purpose is to act as a clear executable specification of the language. It can also be used as a platform for prototyping and validating changes to the language. Its intended audience is people working on the design of Carbon, and it is not intended for real-world Carbon programming on any scale.",
+  "keywords": [
+    
+  ],
+  "articleBody": " Note: This is the first of two guest blog posts from Carbon’s Google-Summer-of-Code contributors this year.\nCarbon Explorer is a prototype interpreter for Carbon whose primary purpose is to act as a clear executable specification of the language. It can also be used as a platform for prototyping and validating changes to the language. Its intended audience is people working on the design of Carbon, and it is not intended for real-world Carbon programming on any scale.\nCarbon Explorer’s trace output refers to a detailed record of program phases and their internal processes a program goes through when executed using the explorer.\nIf you want to read more about Carbon Explorer, you can follow this link: https://github.com/carbon-language/carbon-lang/blob/trunk/explorer/README.md\nAnd if you want to try out the Carbon Explorer you can try it out at Compiler Explorer by following this link: https://carbon.godbolt.org/\nCarbon Explorer’s trace output was very verbose and hard to use, so this project was focused on improving the user facing trace output by doing a range of improvements.\nImprovements done to the trace output are classified in the following sections:\nFiltering A different way of tracing the state Adding the missing output Output format and design Testing the trace output Miscellaneous Changes In this blog I will try to cover most of the improvements with respect to this piece of code written in Carbon Language.\npackage Something api; namespace N; fn N.Add(a: i32, b: i32) -\u003e i32 { return a + b; } fn Main() -\u003e i32 { let sum: auto = N.Add(1, 2); return sum; } Trace output before this project was started (1396 lines): https://gist.github.com/prabhatexit0/e03c9ad426031813222b9faeb3216d0b\nTrace output after the GSoC’23 period was over (226 lines, default options): https://gist.github.com/prabhatexit0/0ab3a7fec99e61eacccbcd4cf309b255\nSee it live in Compiler Explorer!\nFiltering As you can notice from the trace output example shared above, it was really verbose for a very simple program, this was majorly because it consisted of a lot of trace output that belonged to the prelude and it included all the program phases.\nNote: Trace output wasn’t added for all the program phases before this project was started but we later added the missing trace output. That will be covered in the Adding the missing output section.\nNow how did that happen?\nSo, there was no control mechanism for the trace output initially and everything was getting added to the trace that consisted of traces from all the program phases and both prelude and the user’s source code.\nHence, we implemented a filtering mechanism to let users select the program phases and file contexts for which they want to see the trace output.\nAnd by default the trace was displayed only for the user’s source code and execution phase, which resulted in a less verbose default trace output.\nUsers can now select the program phases by passing the --trace_phase=... as a compiler flag when running a program using Carbon Explorer with tracing enabled, similarly the --trace_file_context=... flag can be used for selecting the file contexts.\nSome examples (taking the code example shared initially in the blog for these sample trace output):\n$ bazel run //explorer -- --trace_file= --trace_file_context=main --trace_phase=name_resolution * * * * * * * * * * resolving names * * * * * * * * * * --------------------------------------------------------- ==\u003e declared `N` as `namespace N` in `package` (./testfile.carbon:3) ==\u003e resolved `N` as `namespace N` in `package` (./testfile.carbon:5) ==\u003e declared `Add` as `fn N.Add` in `namespace N` (./testfile.carbon:7) ==\u003e declared `Main` as `fn Main` in `package` (./testfile.carbon:12) -\u003e\u003e resolving decl `namespace N` (./testfile.carbon:3) ==\u003e marked `N` usable in `package` \u003c\u003c- finished resolving decl `namespace N` (./testfile.carbon:3) -\u003e\u003e resolving decl `fn N.Add` (./testfile.carbon:7) ==\u003e resolved `N` as `namespace N` in `package` (./testfile.carbon:5) ... $ bazel run //explorer -- --trace_file= --trace_file_context=main --trace_phase=name_resolution,control_flow_resolution * * * * * * * * * * resolving names * * * * * * * * * * --------------------------------------------------------- ==\u003e declared `N` as `namespace N` in `package` (/app/example.carbon:3) ==\u003e resolved `N` as `namespace N` in `package` (/app/example.carbon:5) ==\u003e declared `Add` as `fn N.Add` in `namespace N` (/app/example.carbon:7) ==\u003e declared `Main` as `fn Main` in `package` (/app/example.carbon:12) ... * * * * * * * * * * resolving control flow * * * * * * * * * * ---------------------------------------------------------------- ==\u003e flow-resolved return statement `return (a + b);` in `fn N.Add` (./testfile.carbon:6) ==\u003e flow-resolved return statement `return sum;` in `fn Main` (./testfile.carbon:11) $ bazel run //explorer -- --trace_file= --trace_file_context=prelude --trace_phase=name_resolution * * * * * * * * * * resolving names * * * * * * * * * * --------------------------------------------------------- ==\u003e declared `As` as `interface As` in `package` (prelude.carbon:14) ==\u003e declared `ImplicitAs` as `interface ImplicitAs` in `package` (prelude.carbon:19) ==\u003e declared `__EqualConverter` as `interface __EqualConverter` in `package` (prelude.carbon:25) ==\u003e declared `__EqualConvert` as `fn __EqualConvert` in `package` (prelude.carbon:28) ==\u003e declared `EqWith` as `interface EqWith` in `package` (prelude.carbon:87) ==\u003e declared `Eq` as `constraint Eq` in `package` (prelude.carbon:91) ==\u003e declared `Ordering` as `choice Ordering` in `package` (prelude.carbon:146) ==\u003e declared `CompareWith` as `interface CompareWith` in `package` (prelude.carbon:152) ==\u003e declared `Ordered` as `constraint Ordered` in `package` (prelude.carbon:155) ... You can read more about the usage here: https://github.com/carbon-language/carbon-lang/blob/trunk/explorer/README.md\nRelated pull requests: Improved trace output selection using program phase filtering #2851 Implemented RAII Type to set current program phase #2886 Add -trace_phase option that takes list of allowed phases #2962 Comma separated selection of allowed phases for trace #2963 Trace output filtering based on file context #2916 A Different Way of Tracing the State Before this project was started, the state of a Carbon program during the execution with the Carbon Explorer was defined using the following:\n{ stack: ... , memory: ... } Here the stack represented what is inside the action stack and memory represented the mapping of addresses to values. The memory is used to represent both heap-allocated objects and also mutable parts of the procedure call stack.\nThe stack is list of actions separated by double pound signs (##). Each action has the format:\nsyntax .position. [[ results ]] { scope } And this was traced whenever all steps for an action were executed or when a recursive action was encountered.\nIssue with this kind of approach was that it led to a lot of blank and repeated entries of the state in the trace output.\n--- step decl namespace N .0. (./testfile.carbon:3) ---\u003e { stack: memory: 0: Heap{} } { stack: memory: 0: Heap{} } --- step decl fn N.Add .0. (./testfile.carbon:7) ---\u003e { stack: memory: 0: Heap{} } { stack: memory: 0: Heap{} } ... To get rid of this issue we decided to trace the state only when there is a change in stack or memory but after trying this out we noticed that there were many cases when there were changes in one and no changes in other and it was adding some verbosity to the output. So, we decided to trace the stack only when there is a change in the stack i.e. when an action is pushed or popped and trace the memory only when there is a change in memory or the memory is read i.e. allocation, deallocation, write, read.\nFor the action stack there were two operations that were pushing an action into the stack and popping an action from the stack.\nPush operation is printed as: \u003e[] stack-push: () Pop operations is printed as: \u003c[] stack-pop: () Here the first three characters try to resemble push/pop operation followed by the operation (stack-push/stack-pop), then the action is printed that is in the following format\nActionKind pos: `` results: [] scope: [] And for the memory,\nAllocation is printed as: ++# memory-alloc: # `value` uninitialized? Read from memory is printed as: \u003c-- memory-read: # `value` Deallocation is printed as: --# memory-dealloc: # `value` Write to memory is printed as: --\u003e memory-write: # `value` You can read more about this format in the Carbon Explorer’s documentation at: https://github.com/carbon-language/carbon-lang/blob/trunk/explorer/README.md\nSo, this was the final result we got for the same:\n\u003e[] stack-push: DeclarationAction pos: 0 `namespace N` (./testfile.carbon:3) -\u003e\u003e step DeclarationAction pos: 0 `namespace N` (./testfile.carbon:3) ---\u003e *** declaration at (./testfile.carbon:3) ``` namespace N; ``` \u003c[] stack-pop: DeclarationAction pos: 0 `namespace N` (./testfile.carbon:3) \u003e[] stack-push: DeclarationAction pos: 0 `fn N.Add` (./testfile.carbon:7) . . *** statement at (./testfile.carbon:6) ``` return (a + b); ``` --\u003e memory-write: #1 `3` \u003c[] stack-pop: StatementAction pos: 1 `return (a + b);` results: [`3`] (./testfile.carbon:6) . . *** statement at (./testfile.carbon:10) ``` var sum: auto = N.Add(1, 2); ``` \u003c-- memory-read: #1 `3` === match pattern `Placeholder` from initializing expression with value `3` \u003c[] stack-pop: StatementAction pos: 1 `var sum: auto = N.Add(1, 2);` results: [`3`] (./testfile.carbon:10) Note: We will talk about the changes to the output outside of the state tracing later in the blog.\nAs you can clearly see, by doing this change we could embed more meaningful information by consuming less space. It also made the trace reading experience more intuitive, as you can see the trace for a step method for a particular action right after it is pushed into the stack and for the memory we know when it is read, allocated, deallocated or written.\nRelated pull requests: Trace stack and memory only when there is change in state #2982 Explorer: add more information to stack trace #3040 Adding the missing output Initially the name resolution, control flow resolution and unformed names resolution were not traced.\nSo, in this project we also added the trace for these phases.\nName Resolution Several aspects are involved in the name resolution process within Carbon Explorer.\nFirstly, all exposed names from declarations that possess a name to be exposed are added into the StaticScope (declared).\nSubsequently, name resolution is performed for each declaration.\nFor more details regarding name resolution, you can look at this source file.\nThese are the details in the name resolution that we added into the trace output:\nDeclaring a name into the static scope: ==\u003e declared `name` as `name` in `scope` (source location) Resolving a name from the static scope: ==\u003e resolved `name` as `name` in `scope` (source location) Start and finish for resolving statements and declarations: -\u003e\u003e resolving decl `decl syntax` (source location) \u003c\u003c- finished resolving decl/stmt `decl/statement syntax` (source location) Marking names declared or usable: ==\u003e marked `N` usable in `package` ==\u003e marked `Add` declared but not usable in `namespace N` ==\u003e marked `Add` usable in `namespace N` You can view the name resolution trace by passing name_resolution in the --trace_phase=-... flag.\nExample: --trace_phase=name_resolution,...\nControl Flow Resolution In control flow resolution non-local control flow edges such as break and return are resolved that are there in the given AST.\nFor more details regarding control flow resolution, you can look at this source file.\nFor control flow resolution we add the details about following statements once their control flow is resolved:\nReturn statements statements (ReturnVar and ReturnExpression) ==\u003e flow-resolved return statement `statement syntax` in `function declaration syntax` (source location) Break statements ==\u003e flow-resolved break statement `statement syntax` for `loop syntax` (source location) Continue statements ==\u003e flow-resolved continue statement `statement syntax` for `loop syntax` (source location) For loop statement ==\u003e flow-resolved for statement `statement syntax` (source location) While loop statement ==\u003e flow-resolved while statement `statement syntax` (source location) You can view the name resolution trace by passing name_resolution in the --trace_phase=-... flag.\nExample: --trace_phase=control_flow_resolution,...\nUnformed Variables Resolution Resolving unformed variables is a forward analysis that checks the may-be-formed states on local variables, for the same there is a class FlowFacts that maps the AST nodes to flow facts within a function.\nEach AST node can be in either of the following form states:\nMust be formed May be formed Unformed Following are the actions that can be performed on the flow facts mapping:\nAdd initialized (adds a must-be-formed flow fact) Add uninitialized (adds an unformed flow fact) Form (Marks an unformed flow fact as may-be-formed) Check (Returns compilation error if the AST node is impossible to be formed) None (Used in traversing children nodes without an action to take) For unformed variables resolution we added the following details into the trace output:\nAction taken:\n==\u003e `name` (source location) Action type can be one of those defined above (AddInit, AddUninit, etc.)\nWhen the explorer starts resolving unformed variables a statement\n-\u003e\u003e resolving-unformed in stmt `statement syntax` (source location) When the explorer starts resolving unformed variables a declaration\n-\u003e\u003e resolving-unformed in decl `declaration syntax` (source location) Related pull requests: Add name resolution information to trace stream #2986 Explorer: add trace for control flow resolution #3014 Explorer: add trace for unformed variable resolution #3015 Misc Changes There were a lot of minor changes we made to make the trace output more consistent and easy to read/understand for users.\nListing all the minor changes will get very long so for this blog; I’m writing just the major ones.\nEnclosing the code with backticks If you notice in the old trace output that I shared in this blog in the beginning, at some places it is getting a bit confusing to identify which part of the trace belongs to the code and which part doesn’t. To avoid this problem we enclosed all the code with backticks.\nFor single line code we used single backticks.\nExample:\n\u003c[] stack-pop: DeclarationAction pos: 0 `fn N.Add` (./testfile.carbon:7) And for multi-line code we used triple backticks along with newlines.\nExample:\n*** declaration at (./testfile.carbon:7) ``` fn Add (a: i32, b: i32) -\u003e i32 { return (a + b); } ``` Adding source location to Type Checker’s trace Type checker’s trace was very inconsistent format wise and lacked the source location at places where code was printed, so one of the additions while improving the type checker was to include source location at places where code is printed.\nBefore:\n** declaring function Add checking TuplePattern (a: i32, b: i32) checking BindingPattern a: i32 checking ExpressionPattern i32 checking IntTypeLiteral i32 After:\n-\u003e\u003e declaring function `Add` (./testfile.carbon:7) -\u003e\u003e checking TuplePattern `(a: i32, b: i32)` (./testfile.carbon:5) -\u003e\u003e checking BindingPattern `a: i32` (./testfile.carbon:5) -\u003e\u003e checking ExpressionPattern `i32` (./testfile.carbon:5) -\u003e\u003e checking IntTypeLiteral `i32` (./testfile.carbon:5) Shorten prelude’s path when printing source location Prelude’s path that was printed on printing the source location was really long and it wasn’t important to fully specify it.\nSo, we shorten it down just to its filename.\nBefore:\n--- step decl interface As .0. (/private/var/tmp/_bazel_prabhatsachdeva/20081091d895e017d1f90f5df34bb89f/execroot/carbon/bazel-out/darwin_arm64-fastbuild/bin/explorer/explorer.runfiles/carbon/explorer/data/prelude.carbon:14) ---\u003e After:\n-\u003e\u003e step DeclarationAction pos: 0 `interface As` (prelude.carbon:14) ---\u003e Related pull requests: Explorer: improve type checking trace output #3039 Explorer: add trace for InstantiateType #3041 Explorer: Reduce prelude path when printing source location #3080 Output format and design Trace output lacked a format and was really inconsistent, so we created a convention to be followed in the trace and also created some helper methods to make it easier to manage.\nEnhance Declaration and Statement Printing Previously, the formatting of declarations and statements had inconsistencies, such as irregular newlines, missing whitespaces, excessive curly braces etc. and it also lacked indentation.\nWe manually fixed the inconsistencies by doing modifications in the Print methods for Declaration and Statement.\nThere were three Print methods that existed for printing Declarations and Statements i.e. Print, PrintDepth and PrintID.\nThe PrintDepth method had a parameter depth that signaled how many levels of nesting to print. We initially tried to add the indentation logic in this method but it was increasing the complexity and we later realized that there were no active use cases for PrintDepth.\nSo, we renamed PrintDepth to PrintIndent, instead of the depth parameter it has num_indent_spaces using which we can specify the required indentation for the output and this method is called recursively for nested declarations or statements.\nBefore:\nnamespace N;fn Add (a: i32, b: i32)-\u003e i32 { { return (a + b); } } fn Main ()-\u003e i32 { { var sum: auto = N.Add(1, 2); return sum; } } After:\nnamespace N; fn Add (a: i32, b: i32) -\u003e i32 { return (a + b); } fn Main () -\u003e i32 { var sum: auto = N.Add(1, 2); return sum; } Line Prefixes If you notice in trace output, you’ll see every line is prefixed with three symbols followed by a whitespace.\nWe created these line prefixes to improve readability and these prefixes also resemble the kind to which that particular line belongs to.\nThese are some of the methods that we created for adding line prefixes:\nauto Indent() const -\u003e llvm::raw_ostream\u0026 { return *this \u003c\u003c \" \"; } auto Start() const -\u003e llvm::raw_ostream\u0026 { return *this \u003c\u003c \"-\u003e\u003e \"; } auto Match() const -\u003e llvm::raw_ostream\u0026 { return *this \u003c\u003c \"=== \"; } auto Result() const -\u003e llvm::raw_ostream\u0026 { return *this \u003c\u003c \"==\u003e \"; } auto Push() const -\u003e llvm::raw_ostream\u0026 { return *this \u003c\u003c \"\u003e[] \"; } auto Pop() const -\u003e llvm::raw_ostream\u0026 { return *this \u003c\u003c \"\u003c[] \"; } Examples:\nIn this example, declaring refers to some process that is starting for that we created a prefix -\u003e\u003e\n-\u003e\u003e declaring function `Add` (./testfile.carbon:7) -\u003e\u003e checking TuplePattern `(a: i32, b: i32)` (./testfile.carbon:5) In this example, the trace output is telling about some results so we prefixed it with ==\u003e\n==\u003e deduction succeeded with results: [] In this example, we prefixed the traced line for stack push with \u003e[] and pop with \u003c[]\n\u003e[] stack-push: ExpressionAction pos: 0 `i32` (./testfile.carbon:9) -\u003e\u003e step ExpressionAction pos: 0 `i32` (./testfile.carbon:9) ---\u003e \u003c[] stack-pop: ExpressionAction pos: 0 `i32` (./testfile.carbon:9) Heading and Subheadings Previously, formatting style for headings and subheadings was in the following manner:\n********** heading ********** ********** subheading ********** To make it look better visually we changed it to this way:\n* * * * * * * * * * Heading * * * * * * * * * * ------------------------------------------------- - - - - - Subheading - - - - - -------------------------------- And we also created following utility methods for the same:\nvoid Heading(std::string_view heading) const { add_blank_lines(2); const std::string_view stars = \"* * * * * * * * * *\"; const std::string dashed_line(stars.size() * 2 + heading.size() + 4, '-'); *this \u003c\u003c stars \u003c\u003c \" \" \u003c\u003c heading \u003c\u003c \" \" \u003c\u003c stars \u003c\u003c \"\\n\" \u003c\u003c dashed_line \u003c\u003c \"\\n\"; } void SubHeading(std::string_view sub_heading) const { add_blank_lines(1); const std::string_view dashes = \"- - - - -\"; const std::string dashed_line(dashes.size() * 2 + sub_heading.size() + 4, '-'); *this \u003c\u003c dashes \u003c\u003c \" \" \u003c\u003c sub_heading \u003c\u003c \" \" \u003c\u003c dashes \u003c\u003c \"\\n\" \u003c\u003c dashed_line \u003c\u003c \"\\n\"; } These utility methods assist in generating the new style by adding the appropriate number of blank lines and constructing the required patterns of asterisks and dashes for both headings and subheadings. This results in a cleaner and more organized presentation of content, making it easier to visually distinguish between different sections.\nRelated pull requests: Explorer: Remove PrintDepth and implement PrintIndent. #3113 Explorer: Add methods to trace for line prefixes #3076 Explorer: Add heading and sub-heading methods to trace #3088 Explorer: add blank lines between trace of different sections #3096 Testing the trace output Before this project was started there existed only sanity checks for the trace output that were using LLVM FileCheck and LLVM LIT.\nInitially for testing the trace output for the program phase filters that we added, we used LLVM LIT to create checks similar to how it was being done before, with a few changes to the configuration to support the compiler flags.\nBut the limitation with these checks was that they didn’t support autoupdate (for anything that changes the trace output we would have to change that part in the test manually as well) and they were prone to missing some significant changes in the explorer that might make changes in the trace output.\nSo, we created a test to completely check the trace output and that also supported autoupdate and that used a new testing infrastructure that was being built for the Carbon Language project to replace LLVM LIT and FileCheck.\nRelated pull requests: Improved trace output selection using program phase filtering #2851 Trace output filtering based on file context #2916 Check explorer’s full trace output #2934 Conclusion As I look back on my journey during the Google Summer of Code 2023 with Carbon Language, I am proud of the progress we’ve made towards enhancing the user-facing trace output of the Carbon Explorer.\nBut there are still a lot of improvements that can be made to the trace output.\nThese are the possible tasks that we might accomplish in future.\nPossible tasks for future Source location based filtering to check trace for specific part of code This will let users select trace output for select parts of the code.\nExample usage:\n1 | package Something api; 2 | 3 | namespace N; 4 | 5 | fn N.Add(a: i32, b: i32) -\u003e i32 { 6 | return a + b; 7 | } 8 | 9 | fn Main() -\u003e i32 { 10 | let sum: auto = N.Add(1, 2); 11 |\treturn sum; 12 | } Using the –trace_source_lines=5-7 flag like in the following command\n$ bazel run //explorer --trace_file=... --trace_source_lines=5-7 Should print trace output that only belongs to the function N.Add\nCustomize highlighting in the godbolt output panel Currently, the trace output in the Compiler Explorer’s output panel uses ASM syntax highlighting and that doesn’t look right and the ASM syntax isn’t compatible with the trace we are producing.\nBut we can have custom syntax highlighting for the trace output, Compiler Explorer uses monaco editor and for that we can create declarative syntax highlighting for trace using Monarch.\nWhat we tried but didn’t work out Indent the trace There are many parts in the trace output which are nested and for that we planned on using indentation for them but it didn’t work out nicely as it made it consume a lot of horizontal space and that made readability hard.\nGrouping messages and putting tab space between them for a column-like view We created a log method in the TraceStream and tried to give more space between the arguments passed to it to give it a table like view similar to how assembly is formatted but for our case it didn’t work out and parts of trace can be really long.\nThank You! At the end I would like to mention that contributing to Carbon Language as part of Google Summer of Code was a dream come true moment for me.\nI’m really fortunate that I got this opportunity to connect with folks at Carbon Language and I will keep contributing to Carbon Language even after this GSoC period.\nI’m extremely thankful to my mentor Richard Smith for guiding me through the project, all the reviews and all the weekly meetings!\nThank you for reading this blog! If you have any suggestions or doubts you can reach out to me on:\nEmail: prabhatexit0@gmail.com Discord: prabhatexit0 ",
+  "wordCount" : "3800",
+  "inLanguage": "en",
+  "image":"https://zygoloid.github.io/cc/illustration.png","datePublished": "2023-11-21T00:00:00Z",
+  "dateModified": "2023-11-21T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "Prabhat Sachdeva"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://zygoloid.github.io/cc/posts/2023/11/improving_carbon_explorer_output/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Coding in Old Entish",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://zygoloid.github.io/cc/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class=" dark" id="top">
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://zygoloid.github.io/cc/" accesskey="h" title="Coding in Old Entish (Alt + H)">Coding in Old Entish</a>
+            <div class="logo-switches">
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://zygoloid.github.io/cc/about" title="About">
+                    <span>About</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://zygoloid.github.io/cc/tags" title="Tags">
+                    <span>Tags</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://zygoloid.github.io/cc/archives" title="Archives">
+                    <span>Archives</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    
+    <h1 class="post-title">
+      Improving the user-facing Carbon Explorer output
+    </h1>
+    <div class="post-meta"><span title='2023-11-21 00:00:00 +0000 UTC'>November 21, 2023</span>&nbsp;·&nbsp;3800 words&nbsp;·&nbsp;Prabhat Sachdeva
+
+</div>
+  </header> 
+<figure class="entry-cover">
+        <img loading="lazy" srcset="https://zygoloid.github.io/cc/posts/2023/11/improving_carbon_explorer_output/illustration_hu5e176e83b72f12780c2ba6d290e2ab6c_114000_360x0_resize_box_3.png 360w ,https://zygoloid.github.io/cc/posts/2023/11/improving_carbon_explorer_output/illustration_hu5e176e83b72f12780c2ba6d290e2ab6c_114000_480x0_resize_box_3.png 480w ,https://zygoloid.github.io/cc/posts/2023/11/improving_carbon_explorer_output/illustration_hu5e176e83b72f12780c2ba6d290e2ab6c_114000_720x0_resize_box_3.png 720w ,https://zygoloid.github.io/cc/posts/2023/11/improving_carbon_explorer_output/illustration_hu5e176e83b72f12780c2ba6d290e2ab6c_114000_1080x0_resize_box_3.png 1080w ,https://zygoloid.github.io/cc/posts/2023/11/improving_carbon_explorer_output/illustration_hu5e176e83b72f12780c2ba6d290e2ab6c_114000_1500x0_resize_box_3.png 1500w ,https://zygoloid.github.io/cc/posts/2023/11/improving_carbon_explorer_output/illustration.png 1600w" 
+            sizes="(min-width: 768px) 720px, 100vw" src="https://zygoloid.github.io/cc/posts/2023/11/improving_carbon_explorer_output/illustration.png" alt="" 
+            width="1600" height="879">
+        
+</figure>
+  <div class="post-content"><blockquote>
+<p>Note: This is the first of two guest blog posts from Carbon&rsquo;s
+Google-Summer-of-Code contributors this year.</p>
+</blockquote>
+<p>Carbon Explorer is a prototype interpreter for Carbon whose primary purpose is
+to act as a clear executable specification of the language. It can also be used
+as a platform for prototyping and validating changes to the language. Its
+intended audience is people working on the design of Carbon, and it is not
+intended for real-world Carbon programming on any scale.</p>
+<p>Carbon Explorer’s trace output refers to a detailed record of program phases and
+their internal processes a program goes through when executed using the
+explorer.</p>
+<p>If you want to read more about Carbon Explorer, you can follow this link:
+<a href="https://github.com/carbon-language/carbon-lang/blob/trunk/explorer/README.md">https://github.com/carbon-language/carbon-lang/blob/trunk/explorer/README.md</a></p>
+<p>And if you want to try out the Carbon Explorer you can try it out at Compiler
+Explorer by following this link: <a href="https://carbon.godbolt.org/">https://carbon.godbolt.org/</a></p>
+<p>Carbon Explorer’s trace output was very verbose and hard to use, so this project
+was focused on improving the user facing trace output by doing a range of
+improvements.</p>
+<p>Improvements done to the trace output are classified in the following sections:</p>
+<ol>
+<li><a href="#filtering">Filtering</a></li>
+<li><a href="#a-different-way-of-tracing-the-state">A different way of tracing the state</a></li>
+<li><a href="#adding-the-missing-output">Adding the missing output</a></li>
+<li><a href="#output-format-and-design">Output format and design</a></li>
+<li><a href="#testing-the-trace-output">Testing the trace output</a></li>
+<li><a href="#misc-changes">Miscellaneous Changes</a></li>
+</ol>
+<p>In this blog I will try to cover most of the improvements with respect to this
+piece of code written in Carbon Language.</p>
+<pre><code class="language-carbon">package Something api;
+
+namespace N;
+
+fn N.Add(a: i32, b: i32) -&gt; i32 {
+	return a + b;
+}
+
+fn Main() -&gt; i32 {
+	let sum: auto = N.Add(1, 2);
+	return sum;
+}
+</code></pre>
+<p>Trace output <strong>before</strong> this project was started (1396 lines):
+<a href="https://gist.github.com/prabhatexit0/e03c9ad426031813222b9faeb3216d0b">https://gist.github.com/prabhatexit0/e03c9ad426031813222b9faeb3216d0b</a></p>
+<p>Trace output <strong>after</strong> the <u>GSoC’23</u> period was over (226 lines, default
+options): <a href="https://gist.github.com/prabhatexit0/0ab3a7fec99e61eacccbcd4cf309b255">https://gist.github.com/prabhatexit0/0ab3a7fec99e61eacccbcd4cf309b255</a></p>
+<p><em>See it <a href="https://carbon.godbolt.org/z/d66hr5vrb">live in Compiler Explorer</a>!</em></p>
+<h2 id="filtering">Filtering<a hidden class="anchor" aria-hidden="true" href="#filtering">#</a></h2>
+<p>As you can notice from the trace output example shared above, it was really
+verbose for a very simple program, this was majorly because it consisted of a
+lot of trace output that belonged to the prelude and it included all the program
+phases.</p>
+<p><em>Note: Trace output wasn’t added for all the program phases before this project
+was started but we later added the missing trace output. That will be covered in
+the <a href="#adding-the-missing-output">Adding the missing output section</a>.</em></p>
+<p>Now how did that happen?</p>
+<p>So, there was no control mechanism for the trace output initially and everything
+was getting added to the trace that consisted of traces from all the program
+phases and both prelude and the user’s source code.</p>
+<p>Hence, we implemented a filtering mechanism to let users select the program
+phases and file contexts for which they want to see the trace output.</p>
+<p>And by default the trace was displayed only for the user&rsquo;s source code and
+execution phase, which resulted in a less verbose default trace output.</p>
+<p>Users can now select the program phases by passing the <code>--trace_phase=...</code> as a
+compiler flag when running a program using Carbon Explorer with tracing enabled,
+similarly the <code>--trace_file_context=...</code> flag can be used for selecting the file
+contexts.</p>
+<p>Some examples (taking the code example shared initially in the blog for these
+sample trace output):</p>
+<pre><code class="language-console">$ bazel run //explorer -- &lt;file path&gt; --trace_file=&lt;trace file path&gt; --trace_file_context=main --trace_phase=name_resolution
+
+* * * * * * * * * *  resolving names  * * * * * * * * * *
+---------------------------------------------------------
+==&gt; declared `N` as `namespace N` in `package` (./testfile.carbon:3)
+==&gt; resolved `N` as `namespace N` in `package` (./testfile.carbon:5)
+==&gt; declared `Add` as `fn N.Add` in `namespace N` (./testfile.carbon:7)
+==&gt; declared `Main` as `fn Main` in `package` (./testfile.carbon:12)
+-&gt;&gt; resolving decl `namespace N` (./testfile.carbon:3)
+==&gt; marked `N` usable in `package`
+&lt;&lt;- finished resolving decl `namespace N` (./testfile.carbon:3)
+-&gt;&gt; resolving decl `fn N.Add` (./testfile.carbon:7)
+==&gt; resolved `N` as `namespace N` in `package` (./testfile.carbon:5)
+...
+</code></pre>
+<pre><code class="language-console">$ bazel run //explorer -- &lt;file path&gt; --trace_file=&lt;trace file path&gt; --trace_file_context=main --trace_phase=name_resolution,control_flow_resolution
+
+* * * * * * * * * *  resolving names  * * * * * * * * * *
+---------------------------------------------------------
+==&gt; declared `N` as `namespace N` in `package` (/app/example.carbon:3)
+==&gt; resolved `N` as `namespace N` in `package` (/app/example.carbon:5)
+==&gt; declared `Add` as `fn N.Add` in `namespace N` (/app/example.carbon:7)
+==&gt; declared `Main` as `fn Main` in `package` (/app/example.carbon:12)
+...
+* * * * * * * * * *  resolving control flow  * * * * * * * * * *
+----------------------------------------------------------------
+==&gt; flow-resolved return statement `return (a + b);` in `fn N.Add` (./testfile.carbon:6)
+==&gt; flow-resolved return statement `return sum;` in `fn Main` (./testfile.carbon:11)
+</code></pre>
+<pre><code class="language-console">$ bazel run //explorer -- &lt;file path&gt; --trace_file=&lt;trace file path&gt; --trace_file_context=prelude --trace_phase=name_resolution
+
+* * * * * * * * * *  resolving names  * * * * * * * * * *
+---------------------------------------------------------
+==&gt; declared `As` as `interface As` in `package` (prelude.carbon:14)
+==&gt; declared `ImplicitAs` as `interface ImplicitAs` in `package` (prelude.carbon:19)
+==&gt; declared `__EqualConverter` as `interface __EqualConverter` in `package` (prelude.carbon:25)
+==&gt; declared `__EqualConvert` as `fn __EqualConvert` in `package` (prelude.carbon:28)
+==&gt; declared `EqWith` as `interface EqWith` in `package` (prelude.carbon:87)
+==&gt; declared `Eq` as `constraint Eq` in `package` (prelude.carbon:91)
+==&gt; declared `Ordering` as `choice Ordering` in `package` (prelude.carbon:146)
+==&gt; declared `CompareWith` as `interface CompareWith` in `package` (prelude.carbon:152)
+==&gt; declared `Ordered` as `constraint Ordered` in `package` (prelude.carbon:155)
+...
+</code></pre>
+<p>You can read more about the usage here:
+<a href="https://github.com/carbon-language/carbon-lang/blob/trunk/explorer/README.md">https://github.com/carbon-language/carbon-lang/blob/trunk/explorer/README.md</a></p>
+<h3 id="related-pull-requests">Related pull requests:<a hidden class="anchor" aria-hidden="true" href="#related-pull-requests">#</a></h3>
+<ul>
+<li>Improved trace output selection using program phase filtering
+<a href="https://github.com/carbon-language/carbon-lang/pull/2851">#2851</a></li>
+<li>Implemented RAII Type to set current program phase
+<a href="https://github.com/carbon-language/carbon-lang/pull/2886">#2886</a></li>
+<li>Add -trace_phase option that takes list of allowed phases
+<a href="https://github.com/carbon-language/carbon-lang/pull/2962">#2962</a></li>
+<li>Comma separated selection of allowed phases for trace
+<a href="https://github.com/carbon-language/carbon-lang/pull/2963">#2963</a></li>
+<li>Trace output filtering based on file context
+<a href="https://github.com/carbon-language/carbon-lang/pull/2916">#2916</a></li>
+</ul>
+<h2 id="a-different-way-of-tracing-the-state">A Different Way of Tracing the State<a hidden class="anchor" aria-hidden="true" href="#a-different-way-of-tracing-the-state">#</a></h2>
+<p>Before this project was started, the state of a Carbon program during the
+execution with the Carbon Explorer was defined using the following:</p>
+<pre><code class="language-text">{
+stack: ... ,
+memory: ...
+}
+</code></pre>
+<p>Here the stack represented what is inside the action stack and memory
+represented the mapping of addresses to values. The memory is used to represent
+both heap-allocated objects and also mutable parts of the procedure call stack.</p>
+<p>The stack is list of actions separated by double pound signs (##). Each action
+has the format:</p>
+<pre><code class="language-text">syntax .position. [[ results ]] { scope }
+</code></pre>
+<p>And this was traced whenever all steps for an action were executed or when a
+recursive action was encountered.</p>
+<p>Issue with this kind of approach was that it led to a lot of blank and repeated
+entries of the state in the trace output.</p>
+<pre><code class="language-text">--- step decl namespace N .0. (./testfile.carbon:3) ---&gt;
+{
+stack:
+memory: 0: Heap{}
+}
+{
+stack:
+memory: 0: Heap{}
+}
+--- step decl fn N.Add .0. (./testfile.carbon:7) ---&gt;
+{
+stack:
+memory: 0: Heap{}
+}
+{
+stack:
+memory: 0: Heap{}
+}
+...
+</code></pre>
+<p>To get rid of this issue we decided to trace the state only when there is a
+change in stack or memory but after trying this out we noticed that there were
+many cases when there were changes in one and no changes in other and it was
+adding some verbosity to the output. So, we decided to trace the stack only when
+there is a change in the stack i.e. when an action is pushed or popped and trace
+the memory only when there is a change in memory or the memory is read i.e.
+allocation, deallocation, write, read.</p>
+<p>For the action stack there were two operations that were pushing an action into
+the stack and popping an action from the stack.</p>
+<ol>
+<li>Push operation is printed as:
+<pre><code class="language-text">&gt;[] stack-push: &lt;action&gt; (&lt;source location&gt;)
+</code></pre>
+</li>
+<li>Pop operations is printed as:
+<pre><code class="language-text">&lt;[] stack-pop: &lt;action&gt; (&lt;source location&gt;)
+</code></pre>
+</li>
+</ol>
+<p>Here the first three characters try to resemble push/pop operation followed by
+the operation (stack-push/stack-pop), then the action is printed that is in the
+following format</p>
+<pre><code class="language-text">ActionKind pos: &lt;pos_count&gt; `&lt;syntax&gt;` results: [&lt;collected_results&gt;]  scope: [&lt;scope&gt;]
+</code></pre>
+<p>And for the memory,</p>
+<ol>
+<li>Allocation is printed as:
+<pre><code class="language-text">++# memory-alloc: #&lt;allocation_index&gt; `value` uninitialized?
+</code></pre>
+</li>
+<li>Read from memory is printed as:
+<pre><code class="language-text">&lt;-- memory-read: #&lt;allocation_index&gt; `value`
+</code></pre>
+</li>
+<li>Deallocation is printed as:
+<pre><code class="language-text">--# memory-dealloc: #&lt;allocation_index&gt; `value`
+</code></pre>
+</li>
+<li>Write to memory is printed as:
+<pre><code class="language-text">--&gt; memory-write: #&lt;allocation_index&gt; `value`
+</code></pre>
+</li>
+</ol>
+<p>You can read more about this format in the Carbon Explorer’s documentation at:
+<a href="https://github.com/carbon-language/carbon-lang/blob/trunk/explorer/README.md">https://github.com/carbon-language/carbon-lang/blob/trunk/explorer/README.md</a></p>
+<p>So, this was the final result we got for the same:</p>
+<pre><code class="language-text">&gt;[] stack-push: DeclarationAction pos: 0 `namespace N` (./testfile.carbon:3)
+-&gt;&gt; step DeclarationAction pos: 0 `namespace N` (./testfile.carbon:3) ---&gt;
+
+*** declaration at (./testfile.carbon:3)
+```
+namespace N;
+```
+&lt;[] stack-pop:  DeclarationAction pos: 0 `namespace N` (./testfile.carbon:3)
+&gt;[] stack-push: DeclarationAction pos: 0 `fn N.Add` (./testfile.carbon:7)
+.
+.
+*** statement at (./testfile.carbon:6)
+```
+return (a + b);
+```
+--&gt; memory-write: #1 `3`
+&lt;[] stack-pop:  StatementAction pos: 1 `return (a + b);` results: [`3`]  (./testfile.carbon:6)
+.
+.
+*** statement at (./testfile.carbon:10)
+```
+var sum: auto = N.Add(1, 2);
+```
+&lt;-- memory-read: #1 `3`
+=== match pattern `Placeholder&lt;sum&gt;`
+    from initializing expression with value `3`
+&lt;[] stack-pop:  StatementAction pos: 1 `var sum: auto = N.Add(1, 2);` results: [`3`]  (./testfile.carbon:10)
+</code></pre>
+<blockquote>
+<p>Note: We will talk about the changes to the output outside of the state
+tracing later in the blog.</p>
+</blockquote>
+<p>As you can clearly see, by doing this change we could embed more meaningful
+information by consuming less space. It also made the trace reading experience
+more intuitive, as you can see the trace for a step method for a particular
+action right after it is pushed into the stack and for the memory we know when
+it is read, allocated, deallocated or written.</p>
+<h3 id="related-pull-requests-1">Related pull requests:<a hidden class="anchor" aria-hidden="true" href="#related-pull-requests-1">#</a></h3>
+<ul>
+<li>Trace stack and memory only when there is change in state
+<a href="https://github.com/carbon-language/carbon-lang/pull/2982">#2982</a></li>
+<li>Explorer: add more information to stack trace
+<a href="https://github.com/carbon-language/carbon-lang/pull/3040">#3040</a></li>
+</ul>
+<h2 id="adding-the-missing-output">Adding the missing output<a hidden class="anchor" aria-hidden="true" href="#adding-the-missing-output">#</a></h2>
+<p>Initially the name resolution, control flow resolution and unformed names
+resolution were not traced.</p>
+<p>So, in this project we also added the trace for these phases.</p>
+<h3 id="name-resolution">Name Resolution<a hidden class="anchor" aria-hidden="true" href="#name-resolution">#</a></h3>
+<p>Several aspects are involved in the name resolution process within Carbon
+Explorer.</p>
+<p>Firstly, all exposed names from declarations that possess a name to be exposed
+are added into the
+<a href="https://github.com/carbon-language/carbon-lang/blob/trunk/explorer/ast/static_scope.h">StaticScope</a>
+(declared).</p>
+<p>Subsequently, name resolution is performed for each declaration.</p>
+<p>For more details regarding name resolution, you can look at
+<a href="https://github.com/carbon-language/carbon-lang/blob/trunk/explorer/interpreter/resolve_names.h">this source file</a>.</p>
+<p>These are the details in the name resolution that we added into the trace
+output:</p>
+<ul>
+<li>Declaring a name into the static scope:
+<pre><code class="language-text">==&gt; declared `name` as `name` in `scope` (source location)
+</code></pre>
+</li>
+<li>Resolving a name from the static scope:
+<pre><code class="language-text">==&gt; resolved `name` as `name` in `scope` (source location)
+</code></pre>
+</li>
+<li>Start and finish for resolving statements and declarations:
+<pre><code class="language-text">-&gt;&gt; resolving decl `decl syntax` (source location)
+&lt;&lt;- finished resolving decl/stmt `decl/statement syntax` (source location)
+</code></pre>
+</li>
+<li>Marking names declared or usable:
+<pre><code class="language-text">==&gt; marked `N` usable in `package`
+==&gt; marked `Add` declared but not usable in `namespace N`
+==&gt; marked `Add` usable in `namespace N`
+</code></pre>
+</li>
+</ul>
+<p>You can view the name resolution trace by passing <code>name_resolution</code> in the
+<code>--trace_phase=-...</code> flag.</p>
+<p>Example: <code>--trace_phase=name_resolution,...</code></p>
+<h3 id="control-flow-resolution">Control Flow Resolution<a hidden class="anchor" aria-hidden="true" href="#control-flow-resolution">#</a></h3>
+<p>In control flow resolution non-local control flow edges such as break and return
+are resolved that are there in the given AST.</p>
+<p>For more details regarding control flow resolution, you can look at
+<a href="https://github.com/carbon-language/carbon-lang/blob/trunk/explorer/interpreter/resolve_control_flow.h">this source file</a>.</p>
+<p>For control flow resolution we add the details about following statements once
+their control flow is resolved:</p>
+<ol>
+<li>Return statements statements (ReturnVar and ReturnExpression)
+<pre><code class="language-text">==&gt; flow-resolved return statement `statement syntax` in `function declaration syntax` (source location)
+</code></pre>
+</li>
+<li>Break statements
+<pre><code class="language-text">==&gt; flow-resolved break statement `statement syntax` for `loop syntax` (source location)
+</code></pre>
+</li>
+<li>Continue statements
+<pre><code class="language-text">==&gt; flow-resolved continue statement `statement syntax` for `loop syntax` (source location)
+</code></pre>
+</li>
+<li>For loop statement
+<pre><code class="language-text">==&gt; flow-resolved for statement `statement syntax` (source location)
+</code></pre>
+</li>
+<li>While loop statement
+<pre><code class="language-text">==&gt; flow-resolved while statement `statement syntax` (source location)
+</code></pre>
+</li>
+</ol>
+<p>You can view the name resolution trace by passing <code>name_resolution</code> in the
+<code>--trace_phase=-...</code> flag.</p>
+<p>Example: <code>--trace_phase=control_flow_resolution,...</code></p>
+<h3 id="unformed-variables-resolution">Unformed Variables Resolution<a hidden class="anchor" aria-hidden="true" href="#unformed-variables-resolution">#</a></h3>
+<p>Resolving unformed variables is a forward analysis that checks the may-be-formed
+states on local variables, for the same there is a class
+<a href="https://github.com/carbon-language/carbon-lang/blob/0ff5e42b1299c184f3eab55d37feffb06c5caee5/explorer/interpreter/resolve_unformed.h#L18C7-L18C16">FlowFacts</a>
+that maps the AST nodes to flow facts within a function.</p>
+<p>Each AST node can be in either of the following form states:</p>
+<ol>
+<li>Must be formed</li>
+<li>May be formed</li>
+<li>Unformed</li>
+</ol>
+<p>Following are the actions that can be performed on the flow facts mapping:</p>
+<ol>
+<li>Add initialized (adds a must-be-formed flow fact)</li>
+<li>Add uninitialized (adds an unformed flow fact)</li>
+<li>Form (Marks an unformed flow fact as may-be-formed)</li>
+<li>Check (Returns compilation error if the AST node is impossible to be formed)</li>
+<li>None (Used in traversing children nodes without an action to take)</li>
+</ol>
+<p>For unformed variables resolution we added the following details into the trace
+output:</p>
+<ol>
+<li>
+<p>Action taken:</p>
+<pre><code class="language-text">==&gt; &lt;action type&gt; `name` (source location)
+</code></pre>
+<p>Action type can be one of those defined above (AddInit, AddUninit, etc.)</p>
+</li>
+<li>
+<p>When the explorer starts resolving unformed variables a statement</p>
+<pre><code class="language-text">-&gt;&gt; resolving-unformed in stmt `statement syntax` (source location)
+</code></pre>
+</li>
+<li>
+<p>When the explorer starts resolving unformed variables a declaration</p>
+<pre><code class="language-text">-&gt;&gt; resolving-unformed in decl `declaration syntax` (source location)
+</code></pre>
+</li>
+</ol>
+<h3 id="related-pull-requests-2">Related pull requests:<a hidden class="anchor" aria-hidden="true" href="#related-pull-requests-2">#</a></h3>
+<ul>
+<li>Add name resolution information to trace stream
+<a href="https://github.com/carbon-language/carbon-lang/pull/2986">#2986</a></li>
+<li>Explorer: add trace for control flow resolution
+<a href="https://github.com/carbon-language/carbon-lang/pull/3014">#3014</a></li>
+<li>Explorer: add trace for unformed variable resolution
+<a href="https://github.com/carbon-language/carbon-lang/pull/3015">#3015</a></li>
+</ul>
+<h2 id="misc-changes">Misc Changes<a hidden class="anchor" aria-hidden="true" href="#misc-changes">#</a></h2>
+<p>There were a lot of minor changes we made to make the trace output more
+consistent and easy to read/understand for users.</p>
+<p>Listing all the minor changes will get very long so for this blog; I’m writing
+just the major ones.</p>
+<h3 id="enclosing-the-code-with-backticks">Enclosing the code with backticks<a hidden class="anchor" aria-hidden="true" href="#enclosing-the-code-with-backticks">#</a></h3>
+<p>If you notice in the old trace output that I shared in this blog in the
+beginning, at some places it is getting a bit confusing to identify which part
+of the trace belongs to the code and which part doesn’t. To avoid this problem
+we enclosed all the code with backticks.</p>
+<p>For single line code we used single backticks.</p>
+<p>Example:</p>
+<pre><code class="language-text">&lt;[] stack-pop: DeclarationAction pos: 0 `fn N.Add` (./testfile.carbon:7)
+</code></pre>
+<p>And for multi-line code we used triple backticks along with newlines.</p>
+<p>Example:</p>
+<pre><code class="language-text">*** declaration at (./testfile.carbon:7)
+```
+fn Add (a: i32, b: i32) -&gt; i32 { return (a + b); }
+```
+</code></pre>
+<h3 id="adding-source-location-to-type-checkers-trace">Adding source location to Type Checker’s trace<a hidden class="anchor" aria-hidden="true" href="#adding-source-location-to-type-checkers-trace">#</a></h3>
+<p>Type checker’s trace was very inconsistent format wise and lacked the source
+location at places where code was printed, so one of the additions while
+improving the type checker was to include source location at places where code
+is printed.</p>
+<p>Before:</p>
+<pre><code class="language-text">** declaring function Add
+checking TuplePattern (a: i32, b: i32)
+checking BindingPattern a: i32
+checking ExpressionPattern i32
+checking IntTypeLiteral i32
+</code></pre>
+<p>After:</p>
+<pre><code class="language-text">-&gt;&gt; declaring function `Add` (./testfile.carbon:7)
+-&gt;&gt; checking TuplePattern `(a: i32, b: i32)` (./testfile.carbon:5)
+-&gt;&gt; checking BindingPattern `a: i32` (./testfile.carbon:5)
+-&gt;&gt; checking ExpressionPattern `i32` (./testfile.carbon:5)
+-&gt;&gt; checking IntTypeLiteral `i32` (./testfile.carbon:5)
+</code></pre>
+<h3 id="shorten-preludes-path-when-printing-source-location">Shorten prelude’s path when printing source location<a hidden class="anchor" aria-hidden="true" href="#shorten-preludes-path-when-printing-source-location">#</a></h3>
+<p>Prelude’s path that was printed on printing the source location was really long
+and it wasn’t important to fully specify it.</p>
+<p>So, we shorten it down just to its filename.</p>
+<p>Before:</p>
+<pre><code class="language-text">--- step decl interface As .0. (/private/var/tmp/_bazel_prabhatsachdeva/20081091d895e017d1f90f5df34bb89f/execroot/carbon/bazel-out/darwin_arm64-fastbuild/bin/explorer/explorer.runfiles/carbon/explorer/data/prelude.carbon:14) ---&gt;
+</code></pre>
+<p>After:</p>
+<pre><code class="language-text">-&gt;&gt; step DeclarationAction pos: 0 `interface As` (prelude.carbon:14) ---&gt;
+</code></pre>
+<h3 id="related-pull-requests-3">Related pull requests:<a hidden class="anchor" aria-hidden="true" href="#related-pull-requests-3">#</a></h3>
+<ul>
+<li>Explorer: improve type checking trace output
+<a href="https://github.com/carbon-language/carbon-lang/pull/3039">#3039</a></li>
+<li>Explorer: add trace for InstantiateType
+<a href="https://github.com/carbon-language/carbon-lang/pull/3041">#3041</a></li>
+<li>Explorer: Reduce prelude path when printing source location
+<a href="https://github.com/carbon-language/carbon-lang/pull/3080">#3080</a></li>
+</ul>
+<h2 id="output-format-and-design">Output format and design<a hidden class="anchor" aria-hidden="true" href="#output-format-and-design">#</a></h2>
+<p>Trace output lacked a format and was really inconsistent, so we created a
+convention to be followed in the trace and also created some helper methods to
+make it easier to manage.</p>
+<h3 id="enhance-declaration-and-statement-printing">Enhance Declaration and Statement Printing<a hidden class="anchor" aria-hidden="true" href="#enhance-declaration-and-statement-printing">#</a></h3>
+<p>Previously, the formatting of declarations and statements had inconsistencies,
+such as irregular newlines, missing whitespaces, excessive curly braces etc. and
+it also lacked indentation.</p>
+<p>We manually fixed the inconsistencies by doing modifications in the Print
+methods for <code>Declaration</code> and <code>Statement</code>.</p>
+<p>There were three Print methods that existed for printing Declarations and
+Statements i.e. <code>Print</code>, <code>PrintDepth</code> and <code>PrintID</code>.</p>
+<p>The <code>PrintDepth</code> method had a parameter <code>depth</code> that signaled how many levels of
+nesting to print. We initially tried to add the indentation logic in this method
+but it was increasing the complexity and we later realized that there were no
+active use cases for <code>PrintDepth</code>.</p>
+<p>So, we renamed <code>PrintDepth</code> to <code>PrintIndent</code>, instead of the <code>depth</code> parameter
+it has <code>num_indent_spaces</code> using which we can specify the required indentation
+for the output and this method is called recursively for nested declarations or
+statements.</p>
+<p>Before:</p>
+<pre><code class="language-text">namespace N;fn Add (a: i32, b: i32)-&gt; i32 {
+{
+return (a + b);
+}
+
+}
+fn Main ()-&gt; i32 {
+{
+var sum: auto = N.Add(1, 2);
+return sum;
+}
+
+}
+</code></pre>
+<p>After:</p>
+<pre><code class="language-text">namespace N;
+
+fn Add (a: i32, b: i32) -&gt; i32
+{
+  return (a + b);
+}
+
+fn Main () -&gt; i32
+{
+  var sum: auto = N.Add(1, 2);
+  return sum;
+}
+</code></pre>
+<h3 id="line-prefixes">Line Prefixes<a hidden class="anchor" aria-hidden="true" href="#line-prefixes">#</a></h3>
+<p>If you notice in trace output, you’ll see every line is prefixed with three
+symbols followed by a whitespace.</p>
+<p>We created these line prefixes to improve readability and these prefixes also
+resemble the kind to which that particular line belongs to.</p>
+<p>These are some of the methods that we created for adding line prefixes:</p>
+<pre><code class="language-cpp">auto Indent() const -&gt; llvm::raw_ostream&amp; { return *this &lt;&lt; &quot;    &quot;; }
+auto Start() const -&gt; llvm::raw_ostream&amp; { return *this &lt;&lt; &quot;-&gt;&gt; &quot;; }
+auto Match() const -&gt; llvm::raw_ostream&amp; { return *this &lt;&lt; &quot;=== &quot;; }
+auto Result() const -&gt; llvm::raw_ostream&amp; { return *this &lt;&lt; &quot;==&gt; &quot;; }
+auto Push() const -&gt; llvm::raw_ostream&amp; { return *this &lt;&lt; &quot;&gt;[] &quot;; }
+auto Pop() const -&gt; llvm::raw_ostream&amp; { return *this &lt;&lt; &quot;&lt;[] &quot;; }
+</code></pre>
+<p><u>Examples:</u></p>
+<p>In this example, declaring refers to some process that is starting for that we
+created a prefix <code>-&gt;&gt;</code></p>
+<pre><code class="language-text">-&gt;&gt; declaring function `Add` (./testfile.carbon:7)
+-&gt;&gt; checking TuplePattern `(a: i32, b: i32)` (./testfile.carbon:5)
+</code></pre>
+<p>In this example, the trace output is telling about some results so we prefixed
+it with <code>==&gt;</code></p>
+<pre><code class="language-text">==&gt; deduction succeeded with results: []
+</code></pre>
+<p>In this example, we prefixed the traced line for stack push with <code>&gt;[]</code> and pop
+with <code>&lt;[]</code></p>
+<pre><code class="language-text">&gt;[] stack-push: ExpressionAction pos: 0 `i32` (./testfile.carbon:9)
+-&gt;&gt; step ExpressionAction pos: 0 `i32` (./testfile.carbon:9) ---&gt;
+&lt;[] stack-pop:  ExpressionAction pos: 0 `i32` (./testfile.carbon:9)
+</code></pre>
+<h3 id="heading-and-subheadings">Heading and Subheadings<a hidden class="anchor" aria-hidden="true" href="#heading-and-subheadings">#</a></h3>
+<p>Previously, formatting style for headings and subheadings was in the following
+manner:</p>
+<pre><code class="language-text">********** heading **********
+********** subheading **********
+</code></pre>
+<p>To make it look better visually we changed it to this way:</p>
+<pre><code class="language-text">* * * * * * * * * *  Heading  * * * * * * * * * *
+-------------------------------------------------
+
+- - - - - Subheading   - - - - -
+--------------------------------
+</code></pre>
+<p>And we also created following utility methods for the same:</p>
+<pre><code class="language-cpp">void Heading(std::string_view heading) const {
+  add_blank_lines(2);
+  const std::string_view stars = &quot;* * * * * * * * * *&quot;;
+  const std::string dashed_line(stars.size() * 2 + heading.size() + 4, '-');
+  *this &lt;&lt; stars &lt;&lt; &quot;  &quot; &lt;&lt; heading &lt;&lt; &quot;  &quot; &lt;&lt; stars &lt;&lt; &quot;\n&quot;
+        &lt;&lt; dashed_line &lt;&lt; &quot;\n&quot;;
+}
+
+void SubHeading(std::string_view sub_heading) const {
+  add_blank_lines(1);
+  const std::string_view dashes = &quot;- - - - -&quot;;
+  const std::string dashed_line(dashes.size() * 2 + sub_heading.size() + 4, '-');
+  *this &lt;&lt; dashes &lt;&lt; &quot;  &quot; &lt;&lt; sub_heading &lt;&lt; &quot;  &quot; &lt;&lt; dashes &lt;&lt; &quot;\n&quot;
+        &lt;&lt; dashed_line &lt;&lt; &quot;\n&quot;;
+}
+</code></pre>
+<p>These utility methods assist in generating the new style by adding the
+appropriate number of blank lines and constructing the required patterns of
+asterisks and dashes for both headings and subheadings. This results in a
+cleaner and more organized presentation of content, making it easier to visually
+distinguish between different sections.</p>
+<h3 id="related-pull-requests-4">Related pull requests:<a hidden class="anchor" aria-hidden="true" href="#related-pull-requests-4">#</a></h3>
+<ul>
+<li>Explorer: Remove PrintDepth and implement PrintIndent.
+<a href="https://github.com/carbon-language/carbon-lang/pull/3113">#3113</a></li>
+<li>Explorer: Add methods to trace for line prefixes
+<a href="https://github.com/carbon-language/carbon-lang/pull/3076">#3076</a></li>
+<li>Explorer: Add heading and sub-heading methods to trace
+<a href="https://github.com/carbon-language/carbon-lang/pull/3088">#3088</a></li>
+<li>Explorer: add blank lines between trace of different sections
+<a href="https://github.com/carbon-language/carbon-lang/pull/3096">#3096</a></li>
+</ul>
+<h2 id="testing-the-trace-output">Testing the trace output<a hidden class="anchor" aria-hidden="true" href="#testing-the-trace-output">#</a></h2>
+<p>Before this project was started there existed only sanity checks for the trace
+output that were using
+<a href="https://llvm.org/docs/CommandGuide/FileCheck.html">LLVM FileCheck</a> and
+<a href="https://llvm.org/docs/CommandGuide/lit.html">LLVM LIT</a>.</p>
+<p>Initially for testing the trace output for the program phase filters that we
+added, we used LLVM LIT to create checks similar to how it was being done
+before, with a few changes to the configuration to support the compiler flags.</p>
+<p>But the limitation with these checks was that they didn’t support autoupdate
+(for anything that changes the trace output we would have to change that part in
+the test manually as well) and they were prone to missing some significant
+changes in the explorer that might make changes in the trace output.</p>
+<p>So, we created a test to completely check the trace output and that also
+supported autoupdate and that used a new testing infrastructure that was being
+built for the Carbon Language project to replace LLVM LIT and FileCheck.</p>
+<h3 id="related-pull-requests-5">Related pull requests:<a hidden class="anchor" aria-hidden="true" href="#related-pull-requests-5">#</a></h3>
+<ul>
+<li>Improved trace output selection using program phase filtering
+<a href="https://github.com/carbon-language/carbon-lang/pull/2851">#2851</a></li>
+<li>Trace output filtering based on file context
+<a href="https://github.com/carbon-language/carbon-lang/pull/2916">#2916</a></li>
+<li>Check explorer&rsquo;s full trace output
+<a href="https://github.com/carbon-language/carbon-lang/pull/2934">#2934</a></li>
+</ul>
+<h2 id="conclusion">Conclusion<a hidden class="anchor" aria-hidden="true" href="#conclusion">#</a></h2>
+<p>As I look back on my journey during the Google Summer of Code 2023 with Carbon
+Language, I am proud of the progress we&rsquo;ve made towards enhancing the
+user-facing trace output of the Carbon Explorer.</p>
+<p>But there are still a lot of improvements that can be made to the trace output.</p>
+<p>These are the possible tasks that we might accomplish in future.</p>
+<h3 id="possible-tasks-for-future">Possible tasks for future<a hidden class="anchor" aria-hidden="true" href="#possible-tasks-for-future">#</a></h3>
+<h4 id="source-location-based-filtering-to-check-trace-for-specific-part-of-code">Source location based filtering to check trace for specific part of code<a hidden class="anchor" aria-hidden="true" href="#source-location-based-filtering-to-check-trace-for-specific-part-of-code">#</a></h4>
+<p>This will let users select trace output for select parts of the code.</p>
+<p>Example usage:</p>
+<pre><code class="language-text">1  | package Something api;
+2  |
+3  | namespace N;
+4  |
+5  | fn N.Add(a: i32, b: i32) -&gt; i32 {
+6  | 	 return a + b;
+7  | }
+8  |
+9  | fn Main() -&gt; i32 {
+10 | 	 let sum: auto = N.Add(1, 2);
+11 |	 return sum;
+12 | }
+</code></pre>
+<p>Using the &ndash;trace_source_lines=5-7 flag like in the following command</p>
+<pre><code class="language-console">$ bazel run //explorer &lt;file path&gt; --trace_file=... --trace_source_lines=5-7
+</code></pre>
+<p>Should print trace output that only belongs to the <code>function N.Add</code></p>
+<h4 id="customize-highlighting-in-the-godbolt-output-panel">Customize highlighting in the godbolt output panel<a hidden class="anchor" aria-hidden="true" href="#customize-highlighting-in-the-godbolt-output-panel">#</a></h4>
+<p><img loading="lazy" src="explorer-example-image.png" alt="Example of trace output in compiler explorer"  />
+</p>
+<p>Currently, the trace output in the Compiler Explorer’s output panel uses ASM
+syntax highlighting and that doesn’t look right and the ASM syntax isn’t
+compatible with the trace we are producing.</p>
+<p>But we can have custom syntax highlighting for the trace output, Compiler
+Explorer uses monaco editor and for that we can create declarative syntax
+highlighting for trace using
+<a href="https://microsoft.github.io/monaco-editor/monarch.html">Monarch</a>.</p>
+<h3 id="what-we-tried-but-didnt-work-out">What we tried but didn’t work out<a hidden class="anchor" aria-hidden="true" href="#what-we-tried-but-didnt-work-out">#</a></h3>
+<h4 id="indent-the-trace">Indent the trace<a hidden class="anchor" aria-hidden="true" href="#indent-the-trace">#</a></h4>
+<p>There are many parts in the trace output which are nested and for that we
+planned on using indentation for them but it didn’t work out nicely as it made
+it consume a lot of horizontal space and that made readability hard.</p>
+<h4 id="grouping-messages-and-putting-tab-space-between-them-for-a-column-like-view">Grouping messages and putting tab space between them for a column-like view<a hidden class="anchor" aria-hidden="true" href="#grouping-messages-and-putting-tab-space-between-them-for-a-column-like-view">#</a></h4>
+<p>We created a log method in the TraceStream and tried to give more space between
+the arguments passed to it to give it a table like view similar to how assembly
+is formatted but for our case it didn’t work out and parts of trace can be
+really long.</p>
+<h2 id="thank-you">Thank You!<a hidden class="anchor" aria-hidden="true" href="#thank-you">#</a></h2>
+<p>At the end I would like to mention that contributing to Carbon Language as part
+of Google Summer of Code was a dream come true moment for me.</p>
+<p>I&rsquo;m really fortunate that I got this opportunity to connect with folks at Carbon
+Language and I will keep contributing to Carbon Language even after this GSoC
+period.</p>
+<p>I’m extremely thankful to my mentor Richard Smith for guiding me through the
+project, all the reviews and all the weekly meetings!</p>
+<p>Thank you for reading this blog! If you have any suggestions or doubts you can
+reach out to me on:</p>
+<ul>
+<li>Email: <a href="mailto:prabhatexit0@gmail.com">prabhatexit0@gmail.com</a></li>
+<li>Discord: <code>prabhatexit0</code></li>
+</ul>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+
+<div class="share-buttons">
+    <a target="_blank" rel="noopener noreferrer" aria-label="share Improving the user-facing Carbon Explorer output on twitter"
+        href="https://twitter.com/intent/tweet/?text=Improving%20the%20user-facing%20Carbon%20Explorer%20output&amp;url=https%3a%2f%2fzygoloid.github.io%2fcc%2fposts%2f2023%2f11%2fimproving_carbon_explorer_output%2f&amp;hashtags=">
+        <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+            <path
+                d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-253.927,424.544c135.939,0 210.268,-112.643 210.268,-210.268c0,-3.218 0,-6.437 -0.153,-9.502c14.406,-10.421 26.973,-23.448 36.935,-38.314c-13.18,5.824 -27.433,9.809 -42.452,11.648c15.326,-9.196 26.973,-23.602 32.49,-40.92c-14.252,8.429 -30.038,14.56 -46.896,17.931c-13.487,-14.406 -32.644,-23.295 -53.946,-23.295c-40.767,0 -73.87,33.104 -73.87,73.87c0,5.824 0.613,11.494 1.992,16.858c-61.456,-3.065 -115.862,-32.49 -152.337,-77.241c-6.284,10.881 -9.962,23.601 -9.962,37.088c0,25.594 13.027,48.276 32.95,61.456c-12.107,-0.307 -23.448,-3.678 -33.41,-9.196l0,0.92c0,35.862 25.441,65.594 59.311,72.49c-6.13,1.686 -12.72,2.606 -19.464,2.606c-4.751,0 -9.348,-0.46 -13.946,-1.38c9.349,29.426 36.628,50.728 68.965,51.341c-25.287,19.771 -57.164,31.571 -91.8,31.571c-5.977,0 -11.801,-0.306 -17.625,-1.073c32.337,21.15 71.264,33.41 112.95,33.41Z" />
+        </svg>
+    </a>
+    <a target="_blank" rel="noopener noreferrer" aria-label="share Improving the user-facing Carbon Explorer output on linkedin"
+        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https%3a%2f%2fzygoloid.github.io%2fcc%2fposts%2f2023%2f11%2fimproving_carbon_explorer_output%2f&amp;title=Improving%20the%20user-facing%20Carbon%20Explorer%20output&amp;summary=Improving%20the%20user-facing%20Carbon%20Explorer%20output&amp;source=https%3a%2f%2fzygoloid.github.io%2fcc%2fposts%2f2023%2f11%2fimproving_carbon_explorer_output%2f">
+        <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+            <path
+                d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-288.985,423.278l0,-225.717l-75.04,0l0,225.717l75.04,0Zm270.539,0l0,-129.439c0,-69.333 -37.018,-101.586 -86.381,-101.586c-39.804,0 -57.634,21.891 -67.617,37.266l0,-31.958l-75.021,0c0.995,21.181 0,225.717 0,225.717l75.02,0l0,-126.056c0,-6.748 0.486,-13.492 2.474,-18.315c5.414,-13.475 17.767,-27.434 38.494,-27.434c27.135,0 38.007,20.707 38.007,51.037l0,120.768l75.024,0Zm-307.552,-334.556c-25.674,0 -42.448,16.879 -42.448,39.002c0,21.658 16.264,39.002 41.455,39.002l0.484,0c26.165,0 42.452,-17.344 42.452,-39.002c-0.485,-22.092 -16.241,-38.954 -41.943,-39.002Z" />
+        </svg>
+    </a>
+    <a target="_blank" rel="noopener noreferrer" aria-label="share Improving the user-facing Carbon Explorer output on reddit"
+        href="https://reddit.com/submit?url=https%3a%2f%2fzygoloid.github.io%2fcc%2fposts%2f2023%2f11%2fimproving_carbon_explorer_output%2f&title=Improving%20the%20user-facing%20Carbon%20Explorer%20output">
+        <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+            <path
+                d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-3.446,265.638c0,-22.964 -18.616,-41.58 -41.58,-41.58c-11.211,0 -21.361,4.457 -28.841,11.666c-28.424,-20.508 -67.586,-33.757 -111.204,-35.278l18.941,-89.121l61.884,13.157c0.756,15.734 13.642,28.29 29.56,28.29c16.407,0 29.706,-13.299 29.706,-29.701c0,-16.403 -13.299,-29.702 -29.706,-29.702c-11.666,0 -21.657,6.792 -26.515,16.578l-69.105,-14.69c-1.922,-0.418 -3.939,-0.042 -5.585,1.036c-1.658,1.073 -2.811,2.761 -3.224,4.686l-21.152,99.438c-44.258,1.228 -84.046,14.494 -112.837,35.232c-7.468,-7.164 -17.589,-11.591 -28.757,-11.591c-22.965,0 -41.585,18.616 -41.585,41.58c0,16.896 10.095,31.41 24.568,37.918c-0.639,4.135 -0.99,8.328 -0.99,12.576c0,63.977 74.469,115.836 166.33,115.836c91.861,0 166.334,-51.859 166.334,-115.836c0,-4.218 -0.347,-8.387 -0.977,-12.493c14.564,-6.47 24.735,-21.034 24.735,-38.001Zm-119.474,108.193c-20.27,20.241 -59.115,21.816 -70.534,21.816c-11.428,0 -50.277,-1.575 -70.522,-21.82c-3.007,-3.008 -3.007,-7.882 0,-10.889c3.003,-2.999 7.882,-3.003 10.885,0c12.777,12.781 40.11,17.317 59.637,17.317c19.522,0 46.86,-4.536 59.657,-17.321c3.016,-2.999 7.886,-2.995 10.885,0.008c3.008,3.011 3.003,7.882 -0.008,10.889Zm-5.23,-48.781c-16.373,0 -29.701,-13.324 -29.701,-29.698c0,-16.381 13.328,-29.714 29.701,-29.714c16.378,0 29.706,13.333 29.706,29.714c0,16.374 -13.328,29.698 -29.706,29.698Zm-160.386,-29.702c0,-16.381 13.328,-29.71 29.714,-29.71c16.369,0 29.689,13.329 29.689,29.71c0,16.373 -13.32,29.693 -29.689,29.693c-16.386,0 -29.714,-13.32 -29.714,-29.693Z" />
+        </svg>
+    </a>
+    <a target="_blank" rel="noopener noreferrer" aria-label="share Improving the user-facing Carbon Explorer output on facebook"
+        href="https://facebook.com/sharer/sharer.php?u=https%3a%2f%2fzygoloid.github.io%2fcc%2fposts%2f2023%2f11%2fimproving_carbon_explorer_output%2f">
+        <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+            <path
+                d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-106.468,0l0,-192.915l66.6,0l12.672,-82.621l-79.272,0l0,-53.617c0,-22.603 11.073,-44.636 46.58,-44.636l36.042,0l0,-70.34c0,0 -32.71,-5.582 -63.982,-5.582c-65.288,0 -107.96,39.569 -107.96,111.204l0,62.971l-72.573,0l0,82.621l72.573,0l0,192.915l-191.104,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Z" />
+        </svg>
+    </a>
+    <a target="_blank" rel="noopener noreferrer" aria-label="share Improving the user-facing Carbon Explorer output on whatsapp"
+        href="https://api.whatsapp.com/send?text=Improving%20the%20user-facing%20Carbon%20Explorer%20output%20-%20https%3a%2f%2fzygoloid.github.io%2fcc%2fposts%2f2023%2f11%2fimproving_carbon_explorer_output%2f">
+        <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+            <path
+                d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-58.673,127.703c-33.842,-33.881 -78.847,-52.548 -126.798,-52.568c-98.799,0 -179.21,80.405 -179.249,179.234c-0.013,31.593 8.241,62.428 23.927,89.612l-25.429,92.884l95.021,-24.925c26.181,14.28 55.659,21.807 85.658,21.816l0.074,0c98.789,0 179.206,-80.413 179.247,-179.243c0.018,-47.895 -18.61,-92.93 -52.451,-126.81Zm-126.797,275.782l-0.06,0c-26.734,-0.01 -52.954,-7.193 -75.828,-20.767l-5.441,-3.229l-56.386,14.792l15.05,-54.977l-3.542,-5.637c-14.913,-23.72 -22.791,-51.136 -22.779,-79.287c0.033,-82.142 66.867,-148.971 149.046,-148.971c39.793,0.014 77.199,15.531 105.329,43.692c28.128,28.16 43.609,65.592 43.594,105.4c-0.034,82.149 -66.866,148.983 -148.983,148.984Zm81.721,-111.581c-4.479,-2.242 -26.499,-13.075 -30.604,-14.571c-4.105,-1.495 -7.091,-2.241 -10.077,2.241c-2.986,4.483 -11.569,14.572 -14.182,17.562c-2.612,2.988 -5.225,3.364 -9.703,1.12c-4.479,-2.241 -18.91,-6.97 -36.017,-22.23c-13.314,-11.876 -22.304,-26.542 -24.916,-31.026c-2.612,-4.484 -0.279,-6.908 1.963,-9.14c2.016,-2.007 4.48,-5.232 6.719,-7.847c2.24,-2.615 2.986,-4.484 4.479,-7.472c1.493,-2.99 0.747,-5.604 -0.374,-7.846c-1.119,-2.241 -10.077,-24.288 -13.809,-33.256c-3.635,-8.733 -7.327,-7.55 -10.077,-7.688c-2.609,-0.13 -5.598,-0.158 -8.583,-0.158c-2.986,0 -7.839,1.121 -11.944,5.604c-4.105,4.484 -15.675,15.32 -15.675,37.364c0,22.046 16.048,43.342 18.287,46.332c2.24,2.99 31.582,48.227 76.511,67.627c10.685,4.615 19.028,7.371 25.533,9.434c10.728,3.41 20.492,2.929 28.209,1.775c8.605,-1.285 26.499,-10.833 30.231,-21.295c3.732,-10.464 3.732,-19.431 2.612,-21.298c-1.119,-1.869 -4.105,-2.99 -8.583,-5.232Z" />
+        </svg>
+    </a>
+    <a target="_blank" rel="noopener noreferrer" aria-label="share Improving the user-facing Carbon Explorer output on telegram"
+        href="https://telegram.me/share/url?text=Improving%20the%20user-facing%20Carbon%20Explorer%20output&amp;url=https%3a%2f%2fzygoloid.github.io%2fcc%2fposts%2f2023%2f11%2fimproving_carbon_explorer_output%2f">
+        <svg version="1.1" xml:space="preserve" viewBox="2 2 28 28" height="30px" width="30px" fill="currentColor">
+            <path
+                d="M26.49,29.86H5.5a3.37,3.37,0,0,1-2.47-1,3.35,3.35,0,0,1-1-2.47V5.48A3.36,3.36,0,0,1,3,3,3.37,3.37,0,0,1,5.5,2h21A3.38,3.38,0,0,1,29,3a3.36,3.36,0,0,1,1,2.46V26.37a3.35,3.35,0,0,1-1,2.47A3.38,3.38,0,0,1,26.49,29.86Zm-5.38-6.71a.79.79,0,0,0,.85-.66L24.73,9.24a.55.55,0,0,0-.18-.46.62.62,0,0,0-.41-.17q-.08,0-16.53,6.11a.59.59,0,0,0-.41.59.57.57,0,0,0,.43.52l4,1.24,1.61,4.83a.62.62,0,0,0,.63.43.56.56,0,0,0,.4-.17L16.54,20l4.09,3A.9.9,0,0,0,21.11,23.15ZM13.8,20.71l-1.21-4q8.72-5.55,8.78-5.55c.15,0,.23,0,.23.16a.18.18,0,0,1,0,.06s-2.51,2.3-7.52,6.8Z" />
+        </svg>
+    </a>
+</div>
+  </footer>
+</article>
+    </main>
+    
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a><footer class="footer">
+  Except as otherwise noted, the content of this page is licensed under
+  <a rel="license" href="https://creativecommons.org/licenses/by/4.0/legalcode">
+    CC-BY 4.0</a>,<br class="over-width-475"/>
+  and code samples are licensed under
+  <a rel="license" href="../../../../LICENSE.md">the LLVM license</a>.
+</footer>
+
+<script>
+  mediumZoom(document.querySelectorAll('.post-single img'), {
+    background: 'var(--bg1)',
+  });
+</script>
+
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+</body>
+
+</html>

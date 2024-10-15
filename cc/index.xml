@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Coding in Old Entish</title>
+    <link>https://zygoloid.github.io/cc/</link>
+    <description>Recent content on Coding in Old Entish</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Thu, 24 Oct 2024 00:00:00 +0000</lastBuildDate><atom:link href="https://zygoloid.github.io/cc/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Summer of Code: Editor Integration</title>
+      <link>https://zygoloid.github.io/cc/posts/2023/11/editor_integration_gsoc/</link>
+      <pubDate>Tue, 28 Nov 2023 00:00:00 +0000</pubDate>
+      
+      <guid>https://zygoloid.github.io/cc/posts/2023/11/editor_integration_gsoc/</guid>
+      <description>Note: This is the second of two guest blog posts from Carbon&amp;rsquo;s Google-Summer-of-Code contributors this year.
+Introduction I&amp;rsquo;m Manmeet Singh, and I took part in Google Summer of Code 2023, contributing to the Editor Integration for the Carbon Language.
+In the realm of software development, a seamless editor experience is of paramount importance. My Google Summer of Code project was to improve the developer experience for Carbon programming language enthusiasts by integrating Carbon into various editors and IDEs.</description>
+    </item>
+    <item>
+      <title>Improving the user-facing Carbon Explorer output</title>
+      <link>https://zygoloid.github.io/cc/posts/2023/11/improving_carbon_explorer_output/</link>
+      <pubDate>Tue, 21 Nov 2023 00:00:00 +0000</pubDate>
+      
+      <guid>https://zygoloid.github.io/cc/posts/2023/11/improving_carbon_explorer_output/</guid>
+      <description>Note: This is the first of two guest blog posts from Carbon&amp;rsquo;s Google-Summer-of-Code contributors this year.
+Carbon Explorer is a prototype interpreter for Carbon whose primary purpose is to act as a clear executable specification of the language. It can also be used as a platform for prototyping and validating changes to the language. Its intended audience is people working on the design of Carbon, and it is not intended for real-world Carbon programming on any scale.</description>
+    </item>
+    <item>
+      <title>The RSS feed is (hopefully) fixed!</title>
+      <link>https://zygoloid.github.io/cc/posts/fixing_rss_feed/</link>
+      <pubDate>Wed, 15 Nov 2023 00:00:00 +0000</pubDate>
+      
+      <guid>https://zygoloid.github.io/cc/posts/fixing_rss_feed/</guid>
+      <description>Earlier this year, while at CppNow, I completely broke the RSS feed for this blog. Really sorry about that, and thanks to Jonathan for pointing it out. However, I have been distracted with work, life, and a bunch of complications over the intervening months and have only now managed to fix it. I hope? Let&amp;rsquo;s hope.
+As is all-too-common, the fix was easy once I understood how to fix it and understood the surprising constraints on how to add that fix to the blog infrastructure.</description>
+    </item>
+    <item>
+      <title>The little things #1: Access control</title>
+      <link>https://zygoloid.github.io/cc/posts/little_things_1_access/</link>
+      <pubDate>Sun, 26 Mar 2023 00:24:16 -0700</pubDate>
+      
+      <guid>https://zygoloid.github.io/cc/posts/little_things_1_access/</guid>
+      <description>This post is part of a series looking at little details of programming language design, mostly in the context of Carbon. Check out the series intro post for context and other entries.
+Let&amp;rsquo;s talk about public vs. private! Folks who know C++ may be familiar with these concepts, but here is a quick example:
+class MyType { public: void MyPublicFunction(); private: void InternalDetail(); }; One of the things that has always been frustrating to me are exactly how public and private work here.</description>
+    </item>
+    <item>
+      <title>The little things in languages</title>
+      <link>https://zygoloid.github.io/cc/posts/little_things_series/</link>
+      <pubDate>Sun, 26 Mar 2023 00:23:16 -0700</pubDate>
+      
+      <guid>https://zygoloid.github.io/cc/posts/little_things_series/</guid>
+      <description>Working on a programming language is one of the most challenging and open ended design spaces that I have ever tried to operate in, both for existing and brand new languages. There are very few bounds or constraints on the solution space to help guide and direct my thinking. Everything is ambiguous and open ended with endless possibilities. It sounds great to me&amp;hellip; until I need to make progress. Then&amp;hellip; not so much.</description>
+    </item>
+    <item>
+      <title>Welcome</title>
+      <link>https://zygoloid.github.io/cc/posts/welcome/</link>
+      <pubDate>Fri, 03 Feb 2023 01:45:34 -0800</pubDate>
+      
+      <guid>https://zygoloid.github.io/cc/posts/welcome/</guid>
+      <description>Welcome everyone to my first &amp;ldquo;real&amp;rdquo; blog. =]
+To set some initial expectations, not all of these posts will be of super high quality published material. Often, I plan to use them for random musings and thoughts which I might have posted somewhere like Hachyderm, but required a bit more text or formatting than makes sense in toot or tweet. Plus, I’d like a forum outside of the bad bird site and more accessible than Mastodon.</description>
+    </item>
+    <item>
+      <title>About</title>
+      <link>https://zygoloid.github.io/cc/about/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://zygoloid.github.io/cc/about/</guid>
+      <description>Hi! My name is Chandler Carruth, and my pronouns are he or they 🏳️‍🌈.
+I am a software engineer specializing in performance critical software, performance optimization, optimizing compilers, programming languages, developer tools, and open source software. I also care deeply about building inclusive and welcoming communities, especially in the tech and OSS space. This is my personal blog, where I share random thoughts on all of these subjects and more.</description>
+    </item>
+  </channel>
+</rss>
