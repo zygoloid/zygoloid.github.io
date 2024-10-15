@@ -1,182 +1,24 @@
-<!DOCTYPE html>
-<html lang="en" dir="auto">
-
-<head><meta charset="utf-8" />
-
-<title>The little things #1: Access control -Coding in Old Entish</title>
-
-<meta
-  name="keywords"
-  content="language design,little things,carbon language,access control,programming,coding,languages,programming languages,compilers,performance,cpus,tech,"
-/>
-<meta name="author" content="" /><meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="theme-color" content="#1b1b28" />
-<meta name="msapplication-TileColor" content="#1b1b28" />
-
-<link rel="canonical" href="https://zygoloid.github.io/cc/posts/little_things_1_access/" />
-
-<link rel="me" href="https://hachyderm.io/@chandlerc" />
-
-
-
-<link rel="icon" href="../../favicon.ico" />
-<link rel="icon" href="../../favicon-16x16.png" type="image/png" sizes="16x16" />
-<link rel="icon" href="../../favicon-32x32.png" type="image/png" sizes="32x32" />
-<link rel="apple-touch-icon" href="../../apple-touch-icon.png" />
-<link rel="mask-icon" href="../../safari-pinned-tab.svg" />
-
-<link
-  rel="preload"
-  href="../../cc/fonts/open_sans/OpenSans-VariableFont_wdth,wght.9f637b868d10819aa0085e6cf7f70953411c8905c4055c069adbe8acc708feef.woff2"
-  as="font"
-  type="font/woff2"
-  crossorigin
-/>
-
-<link
-  rel="preload stylesheet"
-  href="../../cc/css/stylesheet.min.bcdb466112b343cc3d759d5f758f2c71aa35419c8edab9e5d82481cfa283feaa.css"
-  as="style"
-  integrity="sha256-vNtGYRKzQ8w9dZ1fdY8scao1QZyO2rnl2CSBz6KD/qo="
-  crossorigin
-/><script
-  src="../../cc/js/scripts.min.3abf59a79d74ae0e115f2ca793e3e4d0f2d62d936ba3bef280adb69d14af0154.js"
-  integrity="sha256-Or9Zp510rg4RXyynk&#43;Pk0PLWLZNro77ygK22nRSvAVQ="
-  crossorigin
-></script>
-<script>
-  hljs.registerLanguage('Carbon', carbonLang);
-  hljs.highlightAll();
-</script><meta property="og:title" content="The little things #1: Access control" />
-<meta property="og:description" content="This post is part of a series looking at little details of programming language design, mostly in the context of Carbon. Check out the series intro post for context and other entries.
-Let&rsquo;s talk about public vs. private! Folks who know C&#43;&#43; may be familiar with these concepts, but here is a quick example:
-class MyType { public: void MyPublicFunction(); private: void InternalDetail(); }; One of the things that has always been frustrating to me are exactly how public and private work here." />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://zygoloid.github.io/cc/posts/little_things_1_access/" /><meta property="article:section" content="posts" />
-<meta property="article:published_time" content="2023-03-26T00:24:16-07:00" />
-<meta property="article:modified_time" content="2023-03-26T00:24:16-07:00" />
-
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="The little things #1: Access control"/>
-<meta name="twitter:description" content="This post is part of a series looking at little details of programming language design, mostly in the context of Carbon. Check out the series intro post for context and other entries.
-Let&rsquo;s talk about public vs. private! Folks who know C&#43;&#43; may be familiar with these concepts, but here is a quick example:
-class MyType { public: void MyPublicFunction(); private: void InternalDetail(); }; One of the things that has always been frustrating to me are exactly how public and private work here."/>
-
-
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "BreadcrumbList",
-  "itemListElement": [
-    {
-      "@type": "ListItem",
-      "position":  1 ,
-      "name": "Posts",
-      "item": "https://zygoloid.github.io/cc/posts/"
-    }, 
-    {
-      "@type": "ListItem",
-      "position":  2 ,
-      "name": "The little things #1: Access control",
-      "item": "https://zygoloid.github.io/cc/posts/little_things_1_access/"
-    }
-  ]
-}
-</script>
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "BlogPosting",
-  "headline": "The little things #1: Access control",
-  "name": "The little things #1: Access control",
-  "description": "This post is part of a series looking at little details of programming language design, mostly in the context of Carbon. Check out the series intro post for context and other entries.\nLet\u0026rsquo;s talk about public vs. private! Folks who know C++ may be familiar with these concepts, but here is a quick example:\nclass MyType { public: void MyPublicFunction(); private: void InternalDetail(); }; One of the things that has always been frustrating to me are exactly how public and private work here.",
-  "keywords": [
-    "language design", "little things", "carbon language", "access control"
-  ],
-  "articleBody": " This post is part of a series looking at little details of programming language design, mostly in the context of Carbon. Check out the series intro post for context and other entries.\nLet’s talk about public vs. private! Folks who know C++ may be familiar with these concepts, but here is a quick example:\nclass MyType { public: void MyPublicFunction(); private: void InternalDetail(); }; One of the things that has always been frustrating to me are exactly how public and private work here. They introduce regions of declarations, not a single declaration. And the default depends on how you declare the class? 😤 This is almost certainly just a personal thing, and I have no evidence this is a real source of confusion, but it grinds my gears. Anyways, the result is:\nclass MyType { void PrivateByDefault(); public: void MarkedAsPublic(); }; struct MyOtherType { void PublicByDefault(); private: void MarkedAsPrivate(); }; A pretty common model that is much more satisfying is to put these on the specific things that are public or private. Most languages also require that public APIs are explicitly marked, and have a default slightly broader than C++’s “private”. Java’s default is “package”, and C# and Swift call it “internal”. Rust just defines its “private” in a similar way. The results look like:\npackage LittleThings; public class AccessExample { void defaultPackage() { // ... } private void explicitlyPrivate() { // ... } public void explicitlyPublic() { // ... } } namespace LittleThings; public class AccessExample { void defaultInternal() { // ... } private void explicitlyPrivate() { // ... } public void explicitlyPublic() { // ... } } public class MyType { func defaultInternalMethod() { // ... } private func explicitlyPrivateMethod() { // ... } public func explicitlyPublicMethod() { // ... } } pub struct MyType { // ... } impl MyType { fn default_private_method(\u0026amp;self) { // ... } pub fn explicitly_public_method(\u0026amp;self) { // ... } } These all make lots of sense, and seem much more satisfying.\nThen there is Go which uses the case of the name to determine the access level. I struggle with this one as I think the semantic difference here is far too important to convey with such a subtle distinction. But it does at least enforce naming convention consistency… Still, personally, this is not my favorite design:\npackage little_things type MyType struct { // ... } func (obj MyType) lowerCamelIsPrivate() { // ... } func (obj MyType) UpperCamelIsPublic() { // ... } But then I saw something interesting with Kotlin:\npackage little_things class MyType { fun public_by_defalut() { // ... } private fun explicitly_private() { // ... } } The access specifiers are still on each declaration, but now the default is public rather than private! This was a big surprise to me when I first saw it. It seems to violate good principles of software engineering: be explicit about choosing to export a public API. Why would you want that by default?\nBut the more I thought about this choice, the more it started to make sense. First, it still addresses the core issue of C++’s syntax by attaching the access level to the specific name covered. No more regions and associated confusion. But it also addresses a big problem with all of the other languages (besides Go), where the public API becomes the most noisy API to read. When I thought about reading the code and what I really wanted to be prioritized, it’s the public API. And I want as little visual noise as possible there distracting me from what I need to know: names, types, the API itself. By making public the default, it makes the API that is going to be most read also the most readable.\nEven for private members, this continues to work well – when reading code it is on the private members that I want a local reminder that this is an implementation detail and not something that can just be called. These helper methods and fields are also likely able to use shorter names, making the horizontal space of the extra keyword less disruptive to the flow of code.\nI never expected to really be won over by this, but it makes a ton of sense to me now. It also convinced most folks on Carbon and we’re now using that approach as well:\npackage LittleThings; class MyType { fn PublicByDefault(self: Self); private fn ExplicitlyPrivate(self: Self); } private class MyPrivateType { // ... } Even MyType gets the same treatment, as we make things in the package public by default as well, and mark them as private when needed. While this was a big surprise to me at first, it has ended up as one of the little things in Carbon that brings me a lot of joy. I think this is really satisfying, and surprisingly so.\n",
-  "wordCount" : "805",
-  "inLanguage": "en",
-  "datePublished": "2023-03-26T00:24:16-07:00",
-  "dateModified": "2023-03-26T00:24:16-07:00",
-  "mainEntityOfPage": {
-    "@type": "WebPage",
-    "@id": "https://zygoloid.github.io/cc/posts/little_things_1_access/"
-  },
-  "publisher": {
-    "@type": "Organization",
-    "name": "Coding in Old Entish",
-    "logo": {
-      "@type": "ImageObject",
-      "url": "https://zygoloid.github.io/cc/favicon.ico"
-    }
-  }
-}
-</script>
-</head>
-
-<body class=" dark" id="top">
-
-<header class="header">
-    <nav class="nav">
-        <div class="logo">
-            <a href="https://zygoloid.github.io/cc/" accesskey="h" title="Coding in Old Entish (Alt + H)">Coding in Old Entish</a>
-            <div class="logo-switches">
-            </div>
-        </div>
-        <ul id="menu">
-            <li>
-                <a href="https://zygoloid.github.io/cc/about" title="About">
-                    <span>About</span>
-                </a>
-            </li>
-            <li>
-                <a href="https://zygoloid.github.io/cc/tags" title="Tags">
-                    <span>Tags</span>
-                </a>
-            </li>
-            <li>
-                <a href="https://zygoloid.github.io/cc/archives" title="Archives">
-                    <span>Archives</span>
-                </a>
-            </li>
-        </ul>
-    </nav>
-</header>
-<main class="main">
-
-<article class="post-single">
-  <header class="post-header">
-    
-    <h1 class="post-title">
-      The little things #1: Access control
-    </h1>
-    <div class="post-meta"><span title='2023-03-26 00:24:16 -0700 -0700'>March 26, 2023</span>&nbsp;·&nbsp;805 words
-
-</div>
-  </header> 
-  <div class="post-content"><blockquote>
-<p>This post is part of a series looking at little details of programming
+<!doctype html><html lang=en dir=auto><head><meta charset=utf-8><title>The little things #1: Access control -Coding in Old Entish</title>
+<meta name=keywords content="language design,little things,carbon language,access control,programming,coding,languages,programming languages,compilers,performance,cpus,tech,"><meta name=author content><meta name=viewport content="width=device-width,initial-scale=1"><meta name=theme-color content="#1b1b28"><meta name=msapplication-TileColor content="#1b1b28"><link rel=canonical href=https://zygoloid.github.io/cc/posts/little_things_1_access/><link rel=me href=https://hachyderm.io/@chandlerc><link rel=icon href=../../favicon.ico><link rel=icon href=../../favicon-16x16.png type=image/png sizes=16x16><link rel=icon href=../../favicon-32x32.png type=image/png sizes=32x32><link rel=apple-touch-icon href=../../apple-touch-icon.png><link rel=mask-icon href=../../safari-pinned-tab.svg><link rel=preload href=../../cc/fonts/open_sans/OpenSans-VariableFont_wdth,wght.9f637b868d10819aa0085e6cf7f70953411c8905c4055c069adbe8acc708feef.woff2 as=font type=font/woff2 crossorigin><link rel="preload stylesheet" href=../../cc/css/stylesheet.min.bcdb466112b343cc3d759d5f758f2c71aa35419c8edab9e5d82481cfa283feaa.css as=style integrity="sha256-vNtGYRKzQ8w9dZ1fdY8scao1QZyO2rnl2CSBz6KD/qo=" crossorigin><script src=../../cc/js/scripts.min.3abf59a79d74ae0e115f2ca793e3e4d0f2d62d936ba3bef280adb69d14af0154.js integrity="sha256-Or9Zp510rg4RXyynk+Pk0PLWLZNro77ygK22nRSvAVQ=" crossorigin></script><script>hljs.registerLanguage("Carbon",carbonLang),hljs.highlightAll()</script><meta property="og:title" content="The little things #1: Access control"><meta property="og:description" content="This post is part of a series looking at little details of programming language design, mostly in the context of Carbon. Check out the series intro post for context and other entries.
+Let&rsquo;s talk about public vs. private! Folks who know C++ may be familiar with these concepts, but here is a quick example:
+class MyType { public: void MyPublicFunction(); private: void InternalDetail(); }; One of the things that has always been frustrating to me are exactly how public and private work here."><meta property="og:type" content="article"><meta property="og:url" content="https://zygoloid.github.io/cc/posts/little_things_1_access/"><meta property="article:section" content="posts"><meta property="article:published_time" content="2023-03-26T00:24:16-07:00"><meta property="article:modified_time" content="2023-03-26T00:24:16-07:00"><meta name=twitter:card content="summary"><meta name=twitter:title content="The little things #1: Access control"><meta name=twitter:description content="This post is part of a series looking at little details of programming language design, mostly in the context of Carbon. Check out the series intro post for context and other entries.
+Let&rsquo;s talk about public vs. private! Folks who know C++ may be familiar with these concepts, but here is a quick example:
+class MyType { public: void MyPublicFunction(); private: void InternalDetail(); }; One of the things that has always been frustrating to me are exactly how public and private work here."><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Posts","item":"https://zygoloid.github.io/cc/posts/"},{"@type":"ListItem","position":2,"name":"The little things #1: Access control","item":"https://zygoloid.github.io/cc/posts/little_things_1_access/"}]}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BlogPosting","headline":"The little things #1: Access control","name":"The little things #1: Access control","description":"This post is part of a series looking at little details of programming language design, mostly in the context of Carbon. Check out the series intro post for context and other entries.\nLet\u0026rsquo;s talk about public vs. private! Folks who know C++ may be familiar with these concepts, but here is a quick example:\nclass MyType { public: void MyPublicFunction(); private: void InternalDetail(); }; One of the things that has always been frustrating to me are exactly how public and private work here.","keywords":["language design","little things","carbon language","access control"],"articleBody":" This post is part of a series looking at little details of programming language design, mostly in the context of Carbon. Check out the series intro post for context and other entries.\nLet’s talk about public vs. private! Folks who know C++ may be familiar with these concepts, but here is a quick example:\nclass MyType { public: void MyPublicFunction(); private: void InternalDetail(); }; One of the things that has always been frustrating to me are exactly how public and private work here. They introduce regions of declarations, not a single declaration. And the default depends on how you declare the class? 😤 This is almost certainly just a personal thing, and I have no evidence this is a real source of confusion, but it grinds my gears. Anyways, the result is:\nclass MyType { void PrivateByDefault(); public: void MarkedAsPublic(); }; struct MyOtherType { void PublicByDefault(); private: void MarkedAsPrivate(); }; A pretty common model that is much more satisfying is to put these on the specific things that are public or private. Most languages also require that public APIs are explicitly marked, and have a default slightly broader than C++’s “private”. Java’s default is “package”, and C# and Swift call it “internal”. Rust just defines its “private” in a similar way. The results look like:\npackage LittleThings; public class AccessExample { void defaultPackage() { // ... } private void explicitlyPrivate() { // ... } public void explicitlyPublic() { // ... } } namespace LittleThings; public class AccessExample { void defaultInternal() { // ... } private void explicitlyPrivate() { // ... } public void explicitlyPublic() { // ... } } public class MyType { func defaultInternalMethod() { // ... } private func explicitlyPrivateMethod() { // ... } public func explicitlyPublicMethod() { // ... } } pub struct MyType { // ... } impl MyType { fn default_private_method(\u0026amp;self) { // ... } pub fn explicitly_public_method(\u0026amp;self) { // ... } } These all make lots of sense, and seem much more satisfying.\nThen there is Go which uses the case of the name to determine the access level. I struggle with this one as I think the semantic difference here is far too important to convey with such a subtle distinction. But it does at least enforce naming convention consistency… Still, personally, this is not my favorite design:\npackage little_things type MyType struct { // ... } func (obj MyType) lowerCamelIsPrivate() { // ... } func (obj MyType) UpperCamelIsPublic() { // ... } But then I saw something interesting with Kotlin:\npackage little_things class MyType { fun public_by_defalut() { // ... } private fun explicitly_private() { // ... } } The access specifiers are still on each declaration, but now the default is public rather than private! This was a big surprise to me when I first saw it. It seems to violate good principles of software engineering: be explicit about choosing to export a public API. Why would you want that by default?\nBut the more I thought about this choice, the more it started to make sense. First, it still addresses the core issue of C++’s syntax by attaching the access level to the specific name covered. No more regions and associated confusion. But it also addresses a big problem with all of the other languages (besides Go), where the public API becomes the most noisy API to read. When I thought about reading the code and what I really wanted to be prioritized, it’s the public API. And I want as little visual noise as possible there distracting me from what I need to know: names, types, the API itself. By making public the default, it makes the API that is going to be most read also the most readable.\nEven for private members, this continues to work well – when reading code it is on the private members that I want a local reminder that this is an implementation detail and not something that can just be called. These helper methods and fields are also likely able to use shorter names, making the horizontal space of the extra keyword less disruptive to the flow of code.\nI never expected to really be won over by this, but it makes a ton of sense to me now. It also convinced most folks on Carbon and we’re now using that approach as well:\npackage LittleThings; class MyType { fn PublicByDefault(self: Self); private fn ExplicitlyPrivate(self: Self); } private class MyPrivateType { // ... } Even MyType gets the same treatment, as we make things in the package public by default as well, and mark them as private when needed. While this was a big surprise to me at first, it has ended up as one of the little things in Carbon that brings me a lot of joy. I think this is really satisfying, and surprisingly so.\n","wordCount":"805","inLanguage":"en","datePublished":"2023-03-26T00:24:16-07:00","dateModified":"2023-03-26T00:24:16-07:00","mainEntityOfPage":{"@type":"WebPage","@id":"https://zygoloid.github.io/cc/posts/little_things_1_access/"},"publisher":{"@type":"Organization","name":"Coding in Old Entish","logo":{"@type":"ImageObject","url":"https://zygoloid.github.io/cc/favicon.ico"}}}</script></head><body class=dark id=top><header class=header><nav class=nav><div class=logo><a href=https://zygoloid.github.io/cc/ accesskey=h title="Coding in Old Entish (Alt + H)">Coding in Old Entish</a><div class=logo-switches></div></div><ul id=menu><li><a href=https://zygoloid.github.io/cc/about title=About><span>About</span></a></li><li><a href=https://zygoloid.github.io/cc/tags title=Tags><span>Tags</span></a></li><li><a href=https://zygoloid.github.io/cc/archives title=Archives><span>Archives</span></a></li></ul></nav></header><main class=main><article class=post-single><header class=post-header><h1 class=post-title>The little things #1: Access control</h1><div class=post-meta><span title='2023-03-26 00:24:16 -0700 -0700'>March 26, 2023</span>&nbsp;·&nbsp;805 words</div></header><div class=post-content><blockquote><p>This post is part of a series looking at little details of programming
 language design, mostly in the context of Carbon. Check out the
-<a href="../../posts/little_things_series">series intro post</a> for context and other
-entries.</p>
-</blockquote>
-<p>Let&rsquo;s talk about <code>public</code> vs. <code>private</code>! Folks who know C++ may be familiar with
-these concepts, but here is a quick example:</p>
-<pre><code>class MyType {
+<a href=../../posts/little_things_series>series intro post</a> for context and other
+entries.</p></blockquote><p>Let&rsquo;s talk about <code>public</code> vs. <code>private</code>! Folks who know C++ may be familiar with
+these concepts, but here is a quick example:</p><pre><code>class MyType {
 public:
   void MyPublicFunction();
 
 private:
   void InternalDetail();
 };
-</code></pre>
-
-<p>One of the things that has always been frustrating to me are exactly how
+</code></pre><p>One of the things that has always been frustrating to me are exactly how
 <code>public</code> and <code>private</code> work here. They introduce <em>regions</em> of declarations, not
 a single declaration. And the default depends on how you declare the class? 😤
 This is almost certainly just a personal thing, and I have no evidence this is a
-real source of confusion, but it grinds my gears. Anyways, the result is:</p>
-<pre><code>class MyType {
+real source of confusion, but it grinds my gears. Anyways, the result is:</p><pre><code>class MyType {
   void PrivateByDefault();
 
 public:
@@ -189,15 +31,12 @@ struct MyOtherType {
 private:
   void MarkedAsPrivate();
 };
-</code></pre>
-
-<p>A pretty common model that is much more satisfying is to put these on the
+</code></pre><p>A pretty common model that is much more satisfying is to put these on the
 specific things that are public or private. Most languages also require that
 <em>public</em> APIs are explicitly marked, and have a default slightly broader than
 C++&rsquo;s &ldquo;private&rdquo;. Java&rsquo;s default is &ldquo;package&rdquo;, and C# and Swift call it
 &ldquo;internal&rdquo;. Rust just defines its &ldquo;private&rdquo; in a similar way. The results look
-like:</p>
-<p><pre><code>package LittleThings;
+like:</p><p><pre><code>package LittleThings;
 
 public class AccessExample {
   void defaultPackage() {
@@ -212,9 +51,7 @@ public class AccessExample {
     // ...
   }
 }
-</code></pre>
-
-<pre><code>namespace LittleThings;
+</code></pre><pre><code>namespace LittleThings;
 
 public class AccessExample {
   void defaultInternal() {
@@ -229,9 +66,7 @@ public class AccessExample {
     // ...
   }
 }
-</code></pre>
-
-<pre><code>public class MyType {
+</code></pre><pre><code>public class MyType {
   func defaultInternalMethod() {
     // ...
   }
@@ -244,9 +79,7 @@ public class AccessExample {
     // ...
   }
 }
-</code></pre>
-
-<pre><code>pub struct MyType {
+</code></pre><pre><code>pub struct MyType {
   // ...
 }
 
@@ -259,15 +92,11 @@ impl MyType {
       // ...
   }
 }
-</code></pre>
-</p>
-<p>These all make lots of sense, and seem much more satisfying.</p>
-<p>Then there is Go which uses the <em>case</em> of the name to determine the access
+</code></pre></p><p>These all make lots of sense, and seem much more satisfying.</p><p>Then there is Go which uses the <em>case</em> of the name to determine the access
 level. I struggle with this one as I think the semantic difference here is far
 too important to convey with such a subtle distinction. But it does at least
-enforce naming convention consistency&hellip; Still, personally, this is not my
-favorite design:</p>
-<pre><code>package little_things
+enforce naming convention consistency&mldr; Still, personally, this is not my
+favorite design:</p><pre><code>package little_things
 
 type MyType struct {
 	// ...
@@ -280,10 +109,7 @@ func (obj MyType) lowerCamelIsPrivate() {
 func (obj MyType) UpperCamelIsPublic() {
 	// ...
 }
-</code></pre>
-
-<p>But then I saw something interesting with Kotlin:</p>
-<pre><code>package little_things
+</code></pre><p>But then I saw something interesting with Kotlin:</p><pre><code>package little_things
 
 class MyType {
   fun public_by_defalut() {
@@ -294,13 +120,10 @@ class MyType {
     // ...
   }
 }
-</code></pre>
-
-<p>The access specifiers are still on each declaration, but now the default is
+</code></pre><p>The access specifiers are still on each declaration, but now the default is
 <em>public</em> rather than private! This was a big surprise to me when I first saw it.
 It seems to violate good principles of software engineering: be <em>explicit</em> about
-choosing to export a public API. Why would you want that <em>by default</em>?</p>
-<p>But the more I thought about this choice, the more it started to make sense.
+choosing to export a public API. Why would you want that <em>by default</em>?</p><p>But the more I thought about this choice, the more it started to make sense.
 First, it still addresses the core issue of C++&rsquo;s syntax by attaching the access
 level to the specific name covered. No more regions and associated confusion.
 But it also addresses a big problem with all of the other languages (besides
@@ -309,16 +132,13 @@ about reading the code and what I really wanted to be prioritized, it&rsquo;s th
 public API. And I want as little visual noise as possible there distracting me
 from what I need to know: names, types, the API itself. By making public the
 default, it makes the API that is going to be most read also the most
-<em>readable</em>.</p>
-<p>Even for private members, this continues to work well &ndash; when reading code it is
+<em>readable</em>.</p><p>Even for private members, this continues to work well &ndash; when reading code it is
 on the <em>private</em> members that I want a local reminder that this is an
 implementation detail and not something that can just be called. These helper
 methods and fields are also likely able to use shorter names, making the
-horizontal space of the extra keyword less disruptive to the flow of code.</p>
-<p>I never expected to really be won over by this, but it makes a ton of sense to
+horizontal space of the extra keyword less disruptive to the flow of code.</p><p>I never expected to really be won over by this, but it makes a ton of sense to
 me now. It also convinced most folks on Carbon and we&rsquo;re now using that approach
-as well:</p>
-<pre><code>package LittleThings;
+as well:</p><pre><code>package LittleThings;
 
 class MyType {
   fn PublicByDefault(self: Self);
@@ -329,134 +149,15 @@ class MyType {
 private class MyPrivateType {
   // ...
 }
-</code></pre>
-
-<p>Even <code>MyType</code> gets the same treatment, as we make things in the package public
+</code></pre><p>Even <code>MyType</code> gets the same treatment, as we make things in the package public
 by default as well, and mark them as private when needed. While this was a big
 surprise to me at first, it has ended up as one of the little things in Carbon
 that brings me a lot of joy. I think this is really <em>satisfying</em>, and
-surprisingly so.</p>
-
-
-  </div>
-
-  <footer class="post-footer">
-    <ul class="post-tags">
-      <li><a href="https://zygoloid.github.io/cc/tags/language-design/">Language Design</a></li>
-      <li><a href="https://zygoloid.github.io/cc/tags/little-things/">Little Things</a></li>
-      <li><a href="https://zygoloid.github.io/cc/tags/carbon-language/">Carbon Language</a></li>
-      <li><a href="https://zygoloid.github.io/cc/tags/access-control/">Access Control</a></li>
-    </ul>
-
-<div class="share-buttons">
-    <a target="_blank" rel="noopener noreferrer" aria-label="share The little things #1: Access control on twitter"
-        href="https://twitter.com/intent/tweet/?text=The%20little%20things%20%231%3a%20Access%20control&amp;url=https%3a%2f%2fzygoloid.github.io%2fcc%2fposts%2flittle_things_1_access%2f&amp;hashtags=languagedesign%2clittlethings%2ccarbonlanguage%2caccesscontrol">
-        <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
-            <path
-                d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-253.927,424.544c135.939,0 210.268,-112.643 210.268,-210.268c0,-3.218 0,-6.437 -0.153,-9.502c14.406,-10.421 26.973,-23.448 36.935,-38.314c-13.18,5.824 -27.433,9.809 -42.452,11.648c15.326,-9.196 26.973,-23.602 32.49,-40.92c-14.252,8.429 -30.038,14.56 -46.896,17.931c-13.487,-14.406 -32.644,-23.295 -53.946,-23.295c-40.767,0 -73.87,33.104 -73.87,73.87c0,5.824 0.613,11.494 1.992,16.858c-61.456,-3.065 -115.862,-32.49 -152.337,-77.241c-6.284,10.881 -9.962,23.601 -9.962,37.088c0,25.594 13.027,48.276 32.95,61.456c-12.107,-0.307 -23.448,-3.678 -33.41,-9.196l0,0.92c0,35.862 25.441,65.594 59.311,72.49c-6.13,1.686 -12.72,2.606 -19.464,2.606c-4.751,0 -9.348,-0.46 -13.946,-1.38c9.349,29.426 36.628,50.728 68.965,51.341c-25.287,19.771 -57.164,31.571 -91.8,31.571c-5.977,0 -11.801,-0.306 -17.625,-1.073c32.337,21.15 71.264,33.41 112.95,33.41Z" />
-        </svg>
-    </a>
-    <a target="_blank" rel="noopener noreferrer" aria-label="share The little things #1: Access control on linkedin"
-        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https%3a%2f%2fzygoloid.github.io%2fcc%2fposts%2flittle_things_1_access%2f&amp;title=The%20little%20things%20%231%3a%20Access%20control&amp;summary=The%20little%20things%20%231%3a%20Access%20control&amp;source=https%3a%2f%2fzygoloid.github.io%2fcc%2fposts%2flittle_things_1_access%2f">
-        <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
-            <path
-                d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-288.985,423.278l0,-225.717l-75.04,0l0,225.717l75.04,0Zm270.539,0l0,-129.439c0,-69.333 -37.018,-101.586 -86.381,-101.586c-39.804,0 -57.634,21.891 -67.617,37.266l0,-31.958l-75.021,0c0.995,21.181 0,225.717 0,225.717l75.02,0l0,-126.056c0,-6.748 0.486,-13.492 2.474,-18.315c5.414,-13.475 17.767,-27.434 38.494,-27.434c27.135,0 38.007,20.707 38.007,51.037l0,120.768l75.024,0Zm-307.552,-334.556c-25.674,0 -42.448,16.879 -42.448,39.002c0,21.658 16.264,39.002 41.455,39.002l0.484,0c26.165,0 42.452,-17.344 42.452,-39.002c-0.485,-22.092 -16.241,-38.954 -41.943,-39.002Z" />
-        </svg>
-    </a>
-    <a target="_blank" rel="noopener noreferrer" aria-label="share The little things #1: Access control on reddit"
-        href="https://reddit.com/submit?url=https%3a%2f%2fzygoloid.github.io%2fcc%2fposts%2flittle_things_1_access%2f&title=The%20little%20things%20%231%3a%20Access%20control">
-        <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
-            <path
-                d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-3.446,265.638c0,-22.964 -18.616,-41.58 -41.58,-41.58c-11.211,0 -21.361,4.457 -28.841,11.666c-28.424,-20.508 -67.586,-33.757 -111.204,-35.278l18.941,-89.121l61.884,13.157c0.756,15.734 13.642,28.29 29.56,28.29c16.407,0 29.706,-13.299 29.706,-29.701c0,-16.403 -13.299,-29.702 -29.706,-29.702c-11.666,0 -21.657,6.792 -26.515,16.578l-69.105,-14.69c-1.922,-0.418 -3.939,-0.042 -5.585,1.036c-1.658,1.073 -2.811,2.761 -3.224,4.686l-21.152,99.438c-44.258,1.228 -84.046,14.494 -112.837,35.232c-7.468,-7.164 -17.589,-11.591 -28.757,-11.591c-22.965,0 -41.585,18.616 -41.585,41.58c0,16.896 10.095,31.41 24.568,37.918c-0.639,4.135 -0.99,8.328 -0.99,12.576c0,63.977 74.469,115.836 166.33,115.836c91.861,0 166.334,-51.859 166.334,-115.836c0,-4.218 -0.347,-8.387 -0.977,-12.493c14.564,-6.47 24.735,-21.034 24.735,-38.001Zm-119.474,108.193c-20.27,20.241 -59.115,21.816 -70.534,21.816c-11.428,0 -50.277,-1.575 -70.522,-21.82c-3.007,-3.008 -3.007,-7.882 0,-10.889c3.003,-2.999 7.882,-3.003 10.885,0c12.777,12.781 40.11,17.317 59.637,17.317c19.522,0 46.86,-4.536 59.657,-17.321c3.016,-2.999 7.886,-2.995 10.885,0.008c3.008,3.011 3.003,7.882 -0.008,10.889Zm-5.23,-48.781c-16.373,0 -29.701,-13.324 -29.701,-29.698c0,-16.381 13.328,-29.714 29.701,-29.714c16.378,0 29.706,13.333 29.706,29.714c0,16.374 -13.328,29.698 -29.706,29.698Zm-160.386,-29.702c0,-16.381 13.328,-29.71 29.714,-29.71c16.369,0 29.689,13.329 29.689,29.71c0,16.373 -13.32,29.693 -29.689,29.693c-16.386,0 -29.714,-13.32 -29.714,-29.693Z" />
-        </svg>
-    </a>
-    <a target="_blank" rel="noopener noreferrer" aria-label="share The little things #1: Access control on facebook"
-        href="https://facebook.com/sharer/sharer.php?u=https%3a%2f%2fzygoloid.github.io%2fcc%2fposts%2flittle_things_1_access%2f">
-        <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
-            <path
-                d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-106.468,0l0,-192.915l66.6,0l12.672,-82.621l-79.272,0l0,-53.617c0,-22.603 11.073,-44.636 46.58,-44.636l36.042,0l0,-70.34c0,0 -32.71,-5.582 -63.982,-5.582c-65.288,0 -107.96,39.569 -107.96,111.204l0,62.971l-72.573,0l0,82.621l72.573,0l0,192.915l-191.104,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Z" />
-        </svg>
-    </a>
-    <a target="_blank" rel="noopener noreferrer" aria-label="share The little things #1: Access control on whatsapp"
-        href="https://api.whatsapp.com/send?text=The%20little%20things%20%231%3a%20Access%20control%20-%20https%3a%2f%2fzygoloid.github.io%2fcc%2fposts%2flittle_things_1_access%2f">
-        <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
-            <path
-                d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-58.673,127.703c-33.842,-33.881 -78.847,-52.548 -126.798,-52.568c-98.799,0 -179.21,80.405 -179.249,179.234c-0.013,31.593 8.241,62.428 23.927,89.612l-25.429,92.884l95.021,-24.925c26.181,14.28 55.659,21.807 85.658,21.816l0.074,0c98.789,0 179.206,-80.413 179.247,-179.243c0.018,-47.895 -18.61,-92.93 -52.451,-126.81Zm-126.797,275.782l-0.06,0c-26.734,-0.01 -52.954,-7.193 -75.828,-20.767l-5.441,-3.229l-56.386,14.792l15.05,-54.977l-3.542,-5.637c-14.913,-23.72 -22.791,-51.136 -22.779,-79.287c0.033,-82.142 66.867,-148.971 149.046,-148.971c39.793,0.014 77.199,15.531 105.329,43.692c28.128,28.16 43.609,65.592 43.594,105.4c-0.034,82.149 -66.866,148.983 -148.983,148.984Zm81.721,-111.581c-4.479,-2.242 -26.499,-13.075 -30.604,-14.571c-4.105,-1.495 -7.091,-2.241 -10.077,2.241c-2.986,4.483 -11.569,14.572 -14.182,17.562c-2.612,2.988 -5.225,3.364 -9.703,1.12c-4.479,-2.241 -18.91,-6.97 -36.017,-22.23c-13.314,-11.876 -22.304,-26.542 -24.916,-31.026c-2.612,-4.484 -0.279,-6.908 1.963,-9.14c2.016,-2.007 4.48,-5.232 6.719,-7.847c2.24,-2.615 2.986,-4.484 4.479,-7.472c1.493,-2.99 0.747,-5.604 -0.374,-7.846c-1.119,-2.241 -10.077,-24.288 -13.809,-33.256c-3.635,-8.733 -7.327,-7.55 -10.077,-7.688c-2.609,-0.13 -5.598,-0.158 -8.583,-0.158c-2.986,0 -7.839,1.121 -11.944,5.604c-4.105,4.484 -15.675,15.32 -15.675,37.364c0,22.046 16.048,43.342 18.287,46.332c2.24,2.99 31.582,48.227 76.511,67.627c10.685,4.615 19.028,7.371 25.533,9.434c10.728,3.41 20.492,2.929 28.209,1.775c8.605,-1.285 26.499,-10.833 30.231,-21.295c3.732,-10.464 3.732,-19.431 2.612,-21.298c-1.119,-1.869 -4.105,-2.99 -8.583,-5.232Z" />
-        </svg>
-    </a>
-    <a target="_blank" rel="noopener noreferrer" aria-label="share The little things #1: Access control on telegram"
-        href="https://telegram.me/share/url?text=The%20little%20things%20%231%3a%20Access%20control&amp;url=https%3a%2f%2fzygoloid.github.io%2fcc%2fposts%2flittle_things_1_access%2f">
-        <svg version="1.1" xml:space="preserve" viewBox="2 2 28 28" height="30px" width="30px" fill="currentColor">
-            <path
-                d="M26.49,29.86H5.5a3.37,3.37,0,0,1-2.47-1,3.35,3.35,0,0,1-1-2.47V5.48A3.36,3.36,0,0,1,3,3,3.37,3.37,0,0,1,5.5,2h21A3.38,3.38,0,0,1,29,3a3.36,3.36,0,0,1,1,2.46V26.37a3.35,3.35,0,0,1-1,2.47A3.38,3.38,0,0,1,26.49,29.86Zm-5.38-6.71a.79.79,0,0,0,.85-.66L24.73,9.24a.55.55,0,0,0-.18-.46.62.62,0,0,0-.41-.17q-.08,0-16.53,6.11a.59.59,0,0,0-.41.59.57.57,0,0,0,.43.52l4,1.24,1.61,4.83a.62.62,0,0,0,.63.43.56.56,0,0,0,.4-.17L16.54,20l4.09,3A.9.9,0,0,0,21.11,23.15ZM13.8,20.71l-1.21-4q8.72-5.55,8.78-5.55c.15,0,.23,0,.23.16a.18.18,0,0,1,0,.06s-2.51,2.3-7.52,6.8Z" />
-        </svg>
-    </a>
-</div>
-  </footer>
-</article>
-    </main>
-    
-<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
-        <path d="M12 6H0l6-6z" />
-    </svg>
-</a><footer class="footer">
-  Except as otherwise noted, the content of this page is licensed under
-  <a rel="license" href="https://creativecommons.org/licenses/by/4.0/legalcode">
-    CC-BY 4.0</a>,<br class="over-width-475"/>
-  and code samples are licensed under
-  <a rel="license" href="../../LICENSE.md">the LLVM license</a>.
-</footer>
-
-<script>
-  mediumZoom(document.querySelectorAll('.post-single img'), {
-    background: 'var(--bg1)',
-  });
-</script>
-
-
-<script>
-    let menu = document.getElementById('menu')
-    if (menu) {
-        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
-        menu.onscroll = function () {
-            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
-        }
-    }
-
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener("click", function (e) {
-            e.preventDefault();
-            var id = this.getAttribute("href").substr(1);
-            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
-                    behavior: "smooth"
-                });
-            } else {
-                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
-            }
-            if (id === "top") {
-                history.replaceState(null, null, " ");
-            } else {
-                history.pushState(null, null, `#${id}`);
-            }
-        });
-    });
-
-</script>
-<script>
-    var mybutton = document.getElementById("top-link");
-    window.onscroll = function () {
-        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
-            mybutton.style.visibility = "visible";
-            mybutton.style.opacity = "1";
-        } else {
-            mybutton.style.visibility = "hidden";
-            mybutton.style.opacity = "0";
-        }
-    };
-
-</script>
-</body>
-
-</html>
+surprisingly so.</p></div><footer class=post-footer><ul class=post-tags><li><a href=https://zygoloid.github.io/cc/tags/language-design/>Language Design</a></li><li><a href=https://zygoloid.github.io/cc/tags/little-things/>Little Things</a></li><li><a href=https://zygoloid.github.io/cc/tags/carbon-language/>Carbon Language</a></li><li><a href=https://zygoloid.github.io/cc/tags/access-control/>Access Control</a></li></ul><div class=share-buttons><a target=_blank rel="noopener noreferrer" aria-label="share The little things #1: Access control on twitter" href="https://twitter.com/intent/tweet/?text=The%20little%20things%20%231%3a%20Access%20control&amp;url=https%3a%2f%2fzygoloid.github.io%2fcc%2fposts%2flittle_things_1_access%2f&amp;hashtags=languagedesign%2clittlethings%2ccarbonlanguage%2caccesscontrol"><svg viewBox="0 0 512 512" height="30" width="30" fill="currentcolor"><path d="M449.446.0C483.971.0 512 28.03 512 62.554v386.892C512 483.97 483.97 512 449.446 512H62.554c-34.524.0-62.554-28.03-62.554-62.554V62.554c0-34.524 28.029-62.554 62.554-62.554h386.892zM195.519 424.544c135.939.0 210.268-112.643 210.268-210.268.0-3.218.0-6.437-.153-9.502 14.406-10.421 26.973-23.448 36.935-38.314-13.18 5.824-27.433 9.809-42.452 11.648 15.326-9.196 26.973-23.602 32.49-40.92-14.252 8.429-30.038 14.56-46.896 17.931-13.487-14.406-32.644-23.295-53.946-23.295-40.767.0-73.87 33.104-73.87 73.87.0 5.824.613 11.494 1.992 16.858-61.456-3.065-115.862-32.49-152.337-77.241-6.284 10.881-9.962 23.601-9.962 37.088.0 25.594 13.027 48.276 32.95 61.456-12.107-.307-23.448-3.678-33.41-9.196v.92c0 35.862 25.441 65.594 59.311 72.49-6.13 1.686-12.72 2.606-19.464 2.606-4.751.0-9.348-.46-13.946-1.38 9.349 29.426 36.628 50.728 68.965 51.341-25.287 19.771-57.164 31.571-91.8 31.571-5.977.0-11.801-.306-17.625-1.073 32.337 21.15 71.264 33.41 112.95 33.41z"/></svg>
+</a><a target=_blank rel="noopener noreferrer" aria-label="share The little things #1: Access control on linkedin" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https%3a%2f%2fzygoloid.github.io%2fcc%2fposts%2flittle_things_1_access%2f&amp;title=The%20little%20things%20%231%3a%20Access%20control&amp;summary=The%20little%20things%20%231%3a%20Access%20control&amp;source=https%3a%2f%2fzygoloid.github.io%2fcc%2fposts%2flittle_things_1_access%2f"><svg viewBox="0 0 512 512" height="30" width="30" fill="currentcolor"><path d="M449.446.0C483.971.0 512 28.03 512 62.554v386.892C512 483.97 483.97 512 449.446 512H62.554c-34.524.0-62.554-28.03-62.554-62.554V62.554c0-34.524 28.029-62.554 62.554-62.554h386.892zM160.461 423.278V197.561h-75.04v225.717h75.04zm270.539.0V293.839c0-69.333-37.018-101.586-86.381-101.586-39.804.0-57.634 21.891-67.617 37.266v-31.958h-75.021c.995 21.181.0 225.717.0 225.717h75.02V297.222c0-6.748.486-13.492 2.474-18.315 5.414-13.475 17.767-27.434 38.494-27.434 27.135.0 38.007 20.707 38.007 51.037v120.768H431zM123.448 88.722C97.774 88.722 81 105.601 81 127.724c0 21.658 16.264 39.002 41.455 39.002h.484c26.165.0 42.452-17.344 42.452-39.002-.485-22.092-16.241-38.954-41.943-39.002z"/></svg>
+</a><a target=_blank rel="noopener noreferrer" aria-label="share The little things #1: Access control on reddit" href="https://reddit.com/submit?url=https%3a%2f%2fzygoloid.github.io%2fcc%2fposts%2flittle_things_1_access%2f&title=The%20little%20things%20%231%3a%20Access%20control"><svg viewBox="0 0 512 512" height="30" width="30" fill="currentcolor"><path d="M449.446.0C483.971.0 512 28.03 512 62.554v386.892C512 483.97 483.97 512 449.446 512H62.554c-34.524.0-62.554-28.03-62.554-62.554V62.554c0-34.524 28.029-62.554 62.554-62.554h386.892zM446 265.638c0-22.964-18.616-41.58-41.58-41.58-11.211.0-21.361 4.457-28.841 11.666-28.424-20.508-67.586-33.757-111.204-35.278l18.941-89.121 61.884 13.157c.756 15.734 13.642 28.29 29.56 28.29 16.407.0 29.706-13.299 29.706-29.701.0-16.403-13.299-29.702-29.706-29.702-11.666.0-21.657 6.792-26.515 16.578l-69.105-14.69c-1.922-.418-3.939-.042-5.585 1.036-1.658 1.073-2.811 2.761-3.224 4.686l-21.152 99.438c-44.258 1.228-84.046 14.494-112.837 35.232-7.468-7.164-17.589-11.591-28.757-11.591-22.965.0-41.585 18.616-41.585 41.58.0 16.896 10.095 31.41 24.568 37.918-.639 4.135-.99 8.328-.99 12.576.0 63.977 74.469 115.836 166.33 115.836s166.334-51.859 166.334-115.836c0-4.218-.347-8.387-.977-12.493 14.564-6.47 24.735-21.034 24.735-38.001zM326.526 373.831c-20.27 20.241-59.115 21.816-70.534 21.816-11.428.0-50.277-1.575-70.522-21.82-3.007-3.008-3.007-7.882.0-10.889 3.003-2.999 7.882-3.003 10.885.0 12.777 12.781 40.11 17.317 59.637 17.317 19.522.0 46.86-4.536 59.657-17.321 3.016-2.999 7.886-2.995 10.885.008 3.008 3.011 3.003 7.882-.008 10.889zm-5.23-48.781c-16.373.0-29.701-13.324-29.701-29.698.0-16.381 13.328-29.714 29.701-29.714 16.378.0 29.706 13.333 29.706 29.714.0 16.374-13.328 29.698-29.706 29.698zM160.91 295.348c0-16.381 13.328-29.71 29.714-29.71 16.369.0 29.689 13.329 29.689 29.71.0 16.373-13.32 29.693-29.689 29.693-16.386.0-29.714-13.32-29.714-29.693z"/></svg>
+</a><a target=_blank rel="noopener noreferrer" aria-label="share The little things #1: Access control on facebook" href="https://facebook.com/sharer/sharer.php?u=https%3a%2f%2fzygoloid.github.io%2fcc%2fposts%2flittle_things_1_access%2f"><svg viewBox="0 0 512 512" height="30" width="30" fill="currentcolor"><path d="M449.446.0C483.971.0 512 28.03 512 62.554v386.892C512 483.97 483.97 512 449.446 512H342.978V319.085h66.6l12.672-82.621h-79.272v-53.617c0-22.603 11.073-44.636 46.58-44.636H425.6v-70.34s-32.71-5.582-63.982-5.582c-65.288.0-107.96 39.569-107.96 111.204v62.971h-72.573v82.621h72.573V512h-191.104c-34.524.0-62.554-28.03-62.554-62.554V62.554c0-34.524 28.029-62.554 62.554-62.554h386.892z"/></svg>
+</a><a target=_blank rel="noopener noreferrer" aria-label="share The little things #1: Access control on whatsapp" href="https://api.whatsapp.com/send?text=The%20little%20things%20%231%3a%20Access%20control%20-%20https%3a%2f%2fzygoloid.github.io%2fcc%2fposts%2flittle_things_1_access%2f"><svg viewBox="0 0 512 512" height="30" width="30" fill="currentcolor"><path d="M449.446.0C483.971.0 512 28.03 512 62.554v386.892C512 483.97 483.97 512 449.446 512H62.554c-34.524.0-62.554-28.03-62.554-62.554V62.554c0-34.524 28.029-62.554 62.554-62.554h386.892zm-58.673 127.703c-33.842-33.881-78.847-52.548-126.798-52.568-98.799.0-179.21 80.405-179.249 179.234-.013 31.593 8.241 62.428 23.927 89.612l-25.429 92.884 95.021-24.925c26.181 14.28 55.659 21.807 85.658 21.816h.074c98.789.0 179.206-80.413 179.247-179.243.018-47.895-18.61-92.93-52.451-126.81zM263.976 403.485h-.06c-26.734-.01-52.954-7.193-75.828-20.767l-5.441-3.229-56.386 14.792 15.05-54.977-3.542-5.637c-14.913-23.72-22.791-51.136-22.779-79.287.033-82.142 66.867-148.971 149.046-148.971 39.793.014 77.199 15.531 105.329 43.692 28.128 28.16 43.609 65.592 43.594 105.4-.034 82.149-66.866 148.983-148.983 148.984zm81.721-111.581c-4.479-2.242-26.499-13.075-30.604-14.571-4.105-1.495-7.091-2.241-10.077 2.241-2.986 4.483-11.569 14.572-14.182 17.562-2.612 2.988-5.225 3.364-9.703 1.12-4.479-2.241-18.91-6.97-36.017-22.23C231.8 264.15 222.81 249.484 220.198 245s-.279-6.908 1.963-9.14c2.016-2.007 4.48-5.232 6.719-7.847 2.24-2.615 2.986-4.484 4.479-7.472 1.493-2.99.747-5.604-.374-7.846-1.119-2.241-10.077-24.288-13.809-33.256-3.635-8.733-7.327-7.55-10.077-7.688-2.609-.13-5.598-.158-8.583-.158-2.986.0-7.839 1.121-11.944 5.604-4.105 4.484-15.675 15.32-15.675 37.364.0 22.046 16.048 43.342 18.287 46.332 2.24 2.99 31.582 48.227 76.511 67.627 10.685 4.615 19.028 7.371 25.533 9.434 10.728 3.41 20.492 2.929 28.209 1.775 8.605-1.285 26.499-10.833 30.231-21.295 3.732-10.464 3.732-19.431 2.612-21.298-1.119-1.869-4.105-2.99-8.583-5.232z"/></svg>
+</a><a target=_blank rel="noopener noreferrer" aria-label="share The little things #1: Access control on telegram" href="https://telegram.me/share/url?text=The%20little%20things%20%231%3a%20Access%20control&amp;url=https%3a%2f%2fzygoloid.github.io%2fcc%2fposts%2flittle_things_1_access%2f"><svg viewBox="2 2 28 28" height="30" width="30" fill="currentcolor"><path d="M26.49 29.86H5.5a3.37 3.37.0 01-2.47-1 3.35 3.35.0 01-1-2.47V5.48A3.36 3.36.0 013 3 3.37 3.37.0 015.5 2h21A3.38 3.38.0 0129 3a3.36 3.36.0 011 2.46V26.37a3.35 3.35.0 01-1 2.47 3.38 3.38.0 01-2.51 1.02zm-5.38-6.71a.79.79.0 00.85-.66L24.73 9.24a.55.55.0 00-.18-.46.62.62.0 00-.41-.17q-.08.0-16.53 6.11a.59.59.0 00-.41.59.57.57.0 00.43.52l4 1.24 1.61 4.83a.62.62.0 00.63.43.56.56.0 00.4-.17L16.54 20l4.09 3A.9.9.0 0021.11 23.15zM13.8 20.71l-1.21-4q8.72-5.55 8.78-5.55c.15.0.23.0.23.16a.18.18.0 010 .06s-2.51 2.3-7.52 6.8z"/></svg></a></div></footer></article></main><a href=#top aria-label="go to top" title="Go to Top (Alt + G)" class=top-link id=top-link accesskey=g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentcolor"><path d="M12 6H0l6-6z"/></svg></a><footer class=footer>Except as otherwise noted, the content of this page is licensed under
+<a rel=license href=https://creativecommons.org/licenses/by/4.0/legalcode>CC-BY 4.0</a>,<br class=over-width-475>and code samples are licensed under
+<a rel=license href=../../LICENSE.md>the LLVM license</a>.</footer><script>mediumZoom(document.querySelectorAll(".post-single img"),{background:"var(--bg1)"})</script><script>let menu=document.getElementById("menu");menu&&(menu.scrollLeft=localStorage.getItem("menu-scroll-position"),menu.onscroll=function(){localStorage.setItem("menu-scroll-position",menu.scrollLeft)}),document.querySelectorAll('a[href^="#"]').forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();var t=this.getAttribute("href").substr(1);window.matchMedia("(prefers-reduced-motion: reduce)").matches?document.querySelector(`[id='${decodeURIComponent(t)}']`).scrollIntoView():document.querySelector(`[id='${decodeURIComponent(t)}']`).scrollIntoView({behavior:"smooth"}),t==="top"?history.replaceState(null,null," "):history.pushState(null,null,`#${t}`)})})</script><script>var mybutton=document.getElementById("top-link");window.onscroll=function(){document.body.scrollTop>800||document.documentElement.scrollTop>800?(mybutton.style.visibility="visible",mybutton.style.opacity="1"):(mybutton.style.visibility="hidden",mybutton.style.opacity="0")}</script></body></html>
