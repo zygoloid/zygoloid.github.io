@@ -10,8 +10,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><link rel="stylesheet" href="../../reveal-js/dist/reset.css">
 <link rel="stylesheet" href="../../reveal-js/dist/reveal.css">
   <link rel="stylesheet" href="../../css/reveal/custom-theme.min.7c45eef1c90ed2ec59efc2f6be51504a472d813ceb30b10ec4c31171d52694d8.css" id="theme"><script
-  src="../../js/scripts.min.3abf59a79d74ae0e115f2ca793e3e4d0f2d62d936ba3bef280adb69d14af0154.js"
-  integrity="sha256-Or9Zp510rg4RXyynk&#43;Pk0PLWLZNro77ygK22nRSvAVQ="
+  src="../../js/scripts.min.755b9ed431162d84905b2ad7ef83e4937fbc7e42cd036d365b3953ccf1f922e1.js"
+  integrity="sha256-dVue1DEWLYSQWyrX74Pkk3&#43;8fkLNA202WzlTzPH5IuE="
   crossorigin
 ></script>
 <script>
@@ -48,7 +48,10 @@
       <div class="slides">
   
 
-    
+    <style>
+em { color: #ff8; }
+</style>
+
 <section data-noprocess data-shortcode-slide
       data-background-image="https://assets.swoogo.com/uploads/medium/4089750-6670c7c7b0a41.png"
       data-background-opacity="0.5"
@@ -63,6 +66,13 @@
 </div><div class="col right">
 <h3 id="llvm-developers-meeting-2024">LLVM Developers&rsquo; Meeting 2024</h3>
 </div></div>
+
+
+
+<aside class="notes"><p>Going to talk about how template generics are implemented in C++ compilers including Clang</p>
+<p>Some benefits and limitations of those approaches</p>
+<p>And a new approach we&rsquo;re using in the Carbon toolchain</p>
+</aside>
 <!--
 <div class="right">
 
@@ -180,14 +190,27 @@ int k = min&lt;int&gt;(1, 2);
 }
 </code></pre>
 <div class="fragment">
-<p>Two main approaches</p>
+<p>Two main approaches:</p>
 <ul>
 <li>Token soup with token replay: used by EDG, MSVC (old parser)</li>
 <li>Dependent parse trees with tree transform: used by Clang, GCC</li>
 </ul>
 </div>
+
+
+
+<aside class="notes"><p>Will talk about both of these</p>
+<p>And then tell you about what we&rsquo;re doing in the Carbon toolchain</p>
+</aside>
+</section>
+
+<section data-noprocess data-shortcode-slide
+      data-background-image="interstitial.jpg"
+      data-background-opacity="0.5">
+  
+<h1 id="token-soup">Token soup</h1>
 </section><section>
-<h3 id="token-soup">Token soup</h3>
+<h3 id="token-soup-1">Token soup</h3>
 <p>Parse: collect list of tokens</p>
 <pre><code class="language-cpp">template&lt;typename T&gt; T clamp(const T &amp;a)
   = { &quot;return&quot; &quot;a&quot; &quot;&lt;&quot; &quot;T&quot; &quot;(&quot; &quot;)&quot; &quot;?&quot; &quot;T&quot; &quot;(&quot; &quot;)&quot; &quot;:&quot; &quot;a&quot; &quot;;&quot; }
@@ -205,16 +228,16 @@ template&lt;&gt; T clamp&lt;T&gt;(const T &amp;a) {
 }
 </code></pre>
 </section><section>
-<h3 id="token-soup-1">Token soup</h3>
+<h3 id="token-soup-2">Token soup</h3>
 <p>Good:</p>
 <ul>
 <li>Simple: reuses components you already had</li>
 <li>Orthogonal: rest of frontend doesn&rsquo;t need to know</li>
 <li>&ldquo;Parsing&rdquo; templates is very cheap</li>
-<li>Permissive: can choose how to interpret code late
+<li><em>Permissive</em> and <em>compatible</em>: can choose how to interpret code late
 <ul>
 <li>No need for <code>typename X::template Y&lt;...&gt;</code></li>
-<li>Better error recovery</li>
+<li>Better <em>error recovery</em></li>
 </ul>
 </li>
 </ul>
@@ -231,7 +254,7 @@ template&lt;&gt; T clamp&lt;T&gt;(const T &amp;a) {
 </ul>
 </div>
 </section><section>
-<h3 id="token-soup-2">Token soup</h3>
+<h3 id="token-soup-3">Token soup</h3>
 <pre><code class="language-cpp">int a = 1;
 namespace N {
   template&lt;typename T&gt; int f() { return a; }
@@ -258,13 +281,20 @@ int b = N::f&lt;int&gt;();
 </ul>
 </div>
 </section><section>
-<h3 id="token-soup-3">Token soup</h3>
+<h3 id="token-soup-4">Token soup</h3>
 <ul>
 <li>Easy to implement</li>
 <li>Hard to implement well</li>
 </ul>
+</section>
+
+<section data-noprocess data-shortcode-slide
+      data-background-image="interstitial.jpg"
+      data-background-opacity="0.5">
+  
+<h1 id="dependent-parse-trees">Dependent parse trees</h1>
 </section><section>
-<h3 id="dependent-parse-trees">Dependent parse trees</h3>
+<h3 id="dependent-parse-trees-1">Dependent parse trees</h3>
 <p>Parse: build normal IR</p>
 <pre><code class="language-cpp">template&lt;typename T&gt; T clamp(const T &amp;a) {
   return a &lt; T() ? T() : a;
@@ -285,7 +315,7 @@ int b = N::f&lt;int&gt;();
 <p>&hellip; with explicit representation for dependent constructs</p>
 </div>
 </section><section>
-<h3 id="dependent-parse-trees-1">Dependent parse trees</h3>
+<h3 id="dependent-parse-trees-2">Dependent parse trees</h3>
 <p>Instantiate: tree transformation builds a new tree</p>
 <pre><code class="language-cpp">template&lt;typename T&gt; T clamp(const T &amp;a) {
   return a &lt; T() ? T() : a;
@@ -303,8 +333,8 @@ int b = N::f&lt;int&gt;();
       ╰─DeclRefExpr &lt;col:26&gt; 'const int' lvalue ParmVar 0xddc7958 'a' 'const int &amp;'
 </code></pre>
 </section><section>
-<h3 id="dependent-parse-trees-2">Dependent parse trees</h3>
-<p>Instantiate: tree transformation</p>
+<h3 id="dependent-parse-trees-3">Dependent parse trees</h3>
+<p>Instantiate: tree transformation builds a new tree</p>
 <pre><code class="language-cpp">template&lt;typename T&gt; T clamp(const T &amp;a) {
   return a &lt; T() ? T() : a;
 }
@@ -326,12 +356,12 @@ int b = N::f&lt;int&gt;();
 <li>May result in somewhat different tree</li>
 </ul>
 </section><section>
-<h3 id="dependent-parse-trees-3">Dependent parse trees</h3>
+<h3 id="dependent-parse-trees-4">Dependent parse trees</h3>
 <p>Good:</p>
 <ul>
-<li>Semantic representation of whole program</li>
+<li><em>Semantic representation</em> of whole program</li>
 <li>Can reuse non-dependent portions of tree</li>
-<li>Mostly orthogonal</li>
+<li><em>Orthogonal</em> (mostly)</li>
 </ul>
 <div class="fragment">
 <p>Bad:</p>
@@ -404,10 +434,21 @@ const bool b2 = is_const&lt;int[2]&gt;::value;
 ...
 </code></pre>
 <!--
-47.49user 2.14system 0:49.67elapsed 99%CPU (0avgtext+0avgdata 3165492maxresident)k
-0.04user 0.05system 0:00.09elapsed 100%CPU (0avgtext+0avgdata 94208maxresident)k
+1000001: 47.49user 2.14system 0:49.67elapsed 99%CPU (0avgtext+0avgdata 3165492maxresident)k
+      1: 0.04user 0.05system 0:00.09elapsed 100%CPU (0avgtext+0avgdata 94208maxresident)k
 
 - 50 µs, 3 KiB per variable
+
+
+minus null: 6.47user 1.22system 0:07.70elapsed 99%CPU (0avgtext+0avgdata 1428792maxresident)k
+
+- 43 µs, 1.6 KiB per instantiation
+
+
+-fsyntax-only: 36.33user 1.69system 0:38.05elapsed 99%CPU (0avgtext+0avgdata 2899928maxresident)k
+   minus null: 4.28user 0.91system 0:05.20elapsed 99%CPU (0avgtext+0avgdata 1428040maxresident)k
+
+- 33 µs, 1.5 KiB per variable
 -->
 <div class="fragment">
 <ul>
@@ -436,6 +477,8 @@ const bool b2 = is_const&lt;int[2]&gt;;
 <div class="fragment">
 <!--
 
+Raw:
+
 ```cpp
 const bool b = __is_const(int[N]);
 ```
@@ -448,20 +491,86 @@ const bool b = __is_const(int[N]);
 
 - 8.4 µs, 1.6 KiB per variable (!)
 
+-fsyntax-only: 6.69user 0.94system 0:07.64elapsed 99%CPU (0avgtext+0avgdata 1668016maxresident)k
+     baseline: 0.01user 0.02system 0:00.03elapsed 100%CPU (0avgtext+0avgdata 86016maxresident)k
+
+- 7.6 µs, 1.6 KiB per variable (!!)
+
+
+Null:
+
 ```cpp
 const bool b = false;
 ```
 6.47user 1.22system 0:07.70elapsed 99%CPU (0avgtext+0avgdata 1428792maxresident)k
 0.05user 0.04system 0:00.10elapsed 99%CPU (0avgtext+0avgdata 93184maxresident)k
 
-- 7.7 µs, 1.4 KiB per instantiation (LLVM IR?)
+- 7.7 µs, 1.4 KiB per variable (!)
+
+-fsyntax-only: 4.28user 0.91system 0:05.20elapsed 99%CPU (0avgtext+0avgdata 1428040maxresident)k
+     baseline: 0.01user 0.01system 0:00.03elapsed 97%CPU (0avgtext+0avgdata 86016maxresident)k
+
+- 5.2 µs, 1.3 KiB per variable (!!)
 -->
 <p>Directly computing <code>__is_const(int[N])</code>:</p>
 <ul>
 <li>0.7 µs, 0.2 KiB</li>
 </ul>
-</div></section>
-    <section><h2 id="new-approach-overlay">New approach: overlay</h2>
+</div>
+<!--
+
+Null:
+
+```carbon
+fn F() {
+  let b0: bool = false;
+  let b1: bool = false;
+  ...
+```
+
+0.82user 0.07system 0:00.90elapsed 99%CPU (0avgtext+0avgdata 467916maxresident)k
+
+Raw:
+
+```carbon
+fn __is_const(T:! type) -> bool = "is_const";
+
+fn F() {
+  let b0: bool = __is_const([i32; 0]);
+  let b1: bool = __is_const([i32; 1]);
+  ...
+```
+
+2.84user 0.15system 0:03.01elapsed 99%CPU (0avgtext+0avgdata 1351428maxresident)k
+
+- 2.1 µs, 0.9 KiB per instantiation
+
+Generic fn:
+
+```carbon
+fn IsConst(T:! type) -> bool {
+  return __is_const(T);
+};
+
+fn F() {
+  let b0: bool = IsConst([i32; 0]);
+  let b1: bool = IsConst([i32; 1]);
+  ...
+```
+
+3.95user 0.15system 0:04.10elapsed 99%CPU (0avgtext+0avgdata 1369856maxresident)k
+
+- 4.1 µs, 0.9 KiB per instantiation (18 B more per instantiation!!!)
+
+--></section>
+    
+<section data-noprocess data-shortcode-slide
+      data-background-image="interstitial.jpg"
+      data-background-opacity="0.5">
+  
+<h1 id="can-we-do-better">Can we do better?</h1>
+</section><section>
+<h2 id="new-approach-overlay">New approach: overlay</h2>
 <p>Idea: treat instantiation as overlay on template</p>
 <ul>
 <li>Instantiation is dependent parse tree plus set of &ldquo;patches&rdquo;</li>
@@ -471,16 +580,16 @@ const bool b = false;
 </section><section>
 <h2 id="carbon-toolchain">Carbon toolchain</h2>
 <ul>
-<li>Data parallel design</li>
 <li>Prioritize performance over ease of implementation</li>
+<li>Data oriented design</li>
 </ul>
-<div class="fragment">
+</section><section>
+<h2 id="carbon-toolchain-1">Carbon toolchain</h2>
 <p>Parse generic:</p>
 <ul>
 <li>Build array of dependent constructs</li>
-<li>Generic to refers opaquely to array elements</li>
+<li>Generic refers opaquely to array elements</li>
 </ul>
-</div>
 <div class="fragment">
 <p>Build specific:</p>
 <ul>
@@ -488,7 +597,7 @@ const bool b = false;
 </ul>
 </div>
 </section><section>
-<h2 id="carbon-toolchain-1">Carbon toolchain</h2>
+<h2 id="carbon-toolchain-2">Carbon toolchain</h2>
 <pre><code class="language-carbon">fn Average[R:! Range where R.Value impls Numeric](v: `&lt;0&gt;R`)
     -&gt; `&lt;1&gt;R`.Value {
   var n: i32 = 0;
@@ -501,7 +610,7 @@ const bool b = false;
 }
 </code></pre>
 </section><section>
-<h2 id="carbon-toolchain-2">Carbon toolchain</h2>
+<h2 id="carbon-toolchain-3">Carbon toolchain</h2>
 <pre><code class="language-carbon">fn Average[R:! Range where R.Value impls Numeric](v: #1)
     -&gt; `&lt;0&gt;#1.Value` {
   var n: i32 = 0;
@@ -517,7 +626,7 @@ const bool b = false;
 <li><code>#1</code> = <code>R</code></li>
 </ul>
 </section><section>
-<h2 id="carbon-toolchain-3">Carbon toolchain</h2>
+<h2 id="carbon-toolchain-4">Carbon toolchain</h2>
 <pre><code class="language-carbon">fn Average[R:! Range where R.Value impls Numeric](v: #1)
     -&gt; #2 {
   var n: i32 = 0;
@@ -534,7 +643,7 @@ const bool b = false;
 <li><code>#2</code> = <code>#1.Value</code></li>
 </ul>
 </section><section>
-<h2 id="carbon-toolchain-4">Carbon toolchain</h2>
+<h2 id="carbon-toolchain-5">Carbon toolchain</h2>
 <pre><code class="language-carbon">fn Average[R:! Range where R.Value impls Numeric](v: #1)
     -&gt; #2 {
   var n: i32 = 0;
@@ -553,7 +662,7 @@ const bool b = false;
 <p><code>R.Value impls Numeric</code> implies that<br>
 <code>IntLiteral(0) impls ImplicitAs(R.Value)</code></p>
 </section><section>
-<h2 id="carbon-toolchain-5">Carbon toolchain</h2>
+<h2 id="carbon-toolchain-6">Carbon toolchain</h2>
 <pre><code class="language-carbon">fn Average[R:! Range where R.Value impls Numeric](v: #1)
     -&gt; #2 {
   var n: i32 = 0;
@@ -571,7 +680,7 @@ const bool b = false;
 <li><code>#3</code> = <code>(IntLiteral(0) as ImplicitAs(#2)).Convert</code></li>
 </ul>
 </section><section>
-<h2 id="carbon-toolchain-6">Carbon toolchain</h2>
+<h2 id="carbon-toolchain-7">Carbon toolchain</h2>
 <pre><code class="language-carbon">fn Average[R:! Range where R.Value impls Numeric](v: #1)
     -&gt; #2 {
   var n: i32 = 0;
@@ -594,7 +703,7 @@ const bool b = false;
 </ul>
 <p>(Pseudocode, actually done in SemIR)</p>
 </section><section>
-<h2 id="carbon-toolchain-7">Carbon toolchain</h2>
+<h2 id="carbon-toolchain-8">Carbon toolchain</h2>
 <p>These are <em>instructions</em> extracted from the generic:</p>
 <ul>
 <li><code>#1</code> = <code>R</code></li>
@@ -606,7 +715,7 @@ const bool b = false;
 <li><code>#7</code> = <code>(#2 as DivWith(i32)).Op</code></li>
 </ul>
 </section><section>
-<h2 id="carbon-toolchain-8">Carbon toolchain</h2>
+<h2 id="carbon-toolchain-9">Carbon toolchain</h2>
 <p>We have computed a <em>compile-time function</em> to form a specific from a generic:</p>
 <pre><code class="language-carbon">fn MakeAverageSpecific(R:! Range where R.Value impls Numeric) -&gt; &lt;function&gt; {
   let v1:! auto = R;
@@ -623,7 +732,7 @@ const bool b = false;
 <p>Forming a specific from a generic is compile-time function evaluation.</p>
 </div>
 </section><section>
-<h2 id="carbon-toolchain-9">Carbon toolchain</h2>
+<h2 id="carbon-toolchain-10">Carbon toolchain</h2>
 <pre><code class="language-carbon">MakeAverageSpecific([i32; 3])
 </code></pre>
 <pre><code class="language-carbon">fn MakeAverageSpecific(R:! Range where R.Value impls Numeric) -&gt; &lt;function&gt; {
@@ -638,7 +747,7 @@ const bool b = false;
 }
 </code></pre>
 </section><section>
-<h2 id="carbon-toolchain-10">Carbon toolchain</h2>
+<h2 id="carbon-toolchain-11">Carbon toolchain</h2>
 <pre><code class="language-carbon">MakeAverageSpecific([i32; 3])
 </code></pre>
 <pre><code class="language-carbon">fn MakeAverageSpecific(R:! Range where R.Value impls Numeric) -&gt; &lt;function&gt; {
@@ -654,7 +763,7 @@ const bool b = false;
 </code></pre>
 </section><section>
 <h2 id="templates">Templates</h2>
-<p>So far, only handled types and constant values that <em>symbolically</em> depend on
+<p>So far, only talked about types and constant values that <em>symbolically</em> depend on
 generic parameters.</p>
 <p>What about templates?</p>
 <ul>
@@ -706,8 +815,8 @@ generic parameters.</p>
 <h2 id="generic-overlay">Generic overlay</h2>
 <p>Good:</p>
 <ul>
-<li>Small</li>
-<li>Fast</li>
+<li><em>Small representation</em></li>
+<li><em>Fast instantiation</em></li>
 <li>Shares code with constant evaluation</li>
 </ul>
 <p>Bad:</p>
@@ -720,8 +829,51 @@ generic parameters.</p>
 </ul>
 </li>
 </ul>
+
+
+
+<aside class="notes"><p>For a simple type trait:
+about an order of magnitude faster and smaller than Clang</p>
+<p>Example of non-orthogonality</p>
+</aside>
 </section>
-    <section><h2 id="lowering">Lowering</h2>
+    <section><h2 id="conclusion">Conclusion</h2>
+<p>Token soup model: good for</p>
+<ul>
+<li><em>Error recovery</em></li>
+<li><em>Permissiveness</em> and <em>compatibility</em></li>
+</ul>
+<p>Dependent parse tree model: good for</p>
+<ul>
+<li><em>Semantic representation</em> of templates</li>
+<li><em>Orthogonality</em></li>
+</ul>
+<p>Overlay model: good for</p>
+<ul>
+<li><em>Small representation</em></li>
+<li><em>Fast instantiation</em></li>
+</ul>
+</section>
+
+<section data-noprocess data-shortcode-slide
+      data-background-image="interstitial.jpg"
+      data-background-opacity="0.5">
+  
+<div class="right">
+<p><a href="https://docs.carbon-lang.dev/#join-us">https://docs.carbon-lang.dev/#join-us</a></p>
+</div>
+<div class="r-stretch" style="display: flex; flex-direction: column; justify-content: center">
+<h2 id="questions">Questions?</h2>
+</div>
+<div class="right">
+<small>
+<p>Slides: <a href="https://chandlerc.blog/slides/2024-llvm-generic-implementation">https://chandlerc.blog/slides/2024-llvm-generic-implementation</a> <br>
+Image credit: <a href="https://unsplash.com/photos/a-blue-background-with-lines-and-dots-xuTJZ7uD7PI">https://unsplash.com/photos/a-blue-background-with-lines-and-dots-xuTJZ7uD7PI</a></p>
+</small>
+</div></section>
+    <section><h2 id="bonus-slides">Bonus slides</h2>
+</section><section>
+<h2 id="lowering">Lowering</h2>
 <pre><code class="language-carbon">fn Average[R:! Range where R.Value impls Numeric](v: #1)
     -&gt; #2 {
   var n: i32 = 0;
@@ -735,7 +887,7 @@ generic parameters.</p>
 </code></pre>
 <div class="fragment">
 <p>-&gt;</p>
-<pre><code class="language-llvm-ir">define void @_CAverage.Main.abc123() {
+<pre><code class="language-llvm">define void @_CAverage.Main.abc123() {
 entry:
   %n.var = alloca i32, align 4
   store i32 0, ptr %n.var, align 4
@@ -811,23 +963,13 @@ entry:
 <li>List of things that vary between specifics</li>
 <li>Per-specific lowered value</li>
 </ul>
-</div></section>
-    <section><h2 id="conclusion">Conclusion</h2>
-<p>Token soup: good for</p>
-<ul>
-<li>Error recovery</li>
-<li>Permissiveness and compatibility</li>
-<li>Tooling</li>
-</ul>
-<p>Tree transform: good for</p>
-<ul>
-<li>Orthogonality</li>
-</ul>
-<p>Overlays: good for</p>
-<ul>
-<li>Peak performance</li>
-</ul>
-</section>
+</div>
+<!--
+
+Imperfect: recursion / mutual recursion break the scheme, need to identify and
+handle SCCs
+
+--></section>
 
 </div>
       
