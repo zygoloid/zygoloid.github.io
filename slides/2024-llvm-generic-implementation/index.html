@@ -92,7 +92,7 @@ https://zy.golo.id/slides/2024-llvm-generic-implementation
 <ul>
 <li>Not fully type-checkable when defined</li>
 <li>Substitution into template produces a <em>template instantiation</em></li>
-<li>Instantiation is a normal function</li>
+<li>Instantiation of function template is a normal function</li>
 </ul>
 </div>
 </section><section>
@@ -105,7 +105,7 @@ https://zy.golo.id/slides/2024-llvm-generic-implementation
 <ul>
 <li>Not fully type-checkable when defined</li>
 <li>Substitution into generic produces a <em>specific</em></li>
-<li>Specific is a normal function</li>
+<li>Specific for generic function is a normal function</li>
 </ul>
 </div><div class="fragment">
 <pre><code class="language-carbon">fn ClampNonnegative[T:! Numeric &amp; Ordered](a: T) -&gt; T {
@@ -222,8 +222,8 @@ int k = min<int>(1, 2);
 </section><section>
 <h3 id="dependent-parse-trees-2">Dependent parse trees</h3>
 <p>Instantiate: tree transformation builds a new tree</p>
-<pre><code class="language-cpp">template&lt;typename T&gt; T clamp_nonnegative(const T &amp;a) {
-  return a &lt; T() ? T() : a;
+<pre><code class="language-cpp">template&lt;&gt; int clamp_nonnegative&lt;int&gt;(const int &amp;a) {
+  return a &lt; int() ? int() : a;
 }
 </code></pre>
 <pre><code class="language-cpp" data-line-numbers="|8-9|1-2,5-7,10">FunctionDecl &lt;col:22, line:3:1&gt; line:1:24 clamp_nonnegative 'int (const int &amp;)'
@@ -845,6 +845,12 @@ Overlay model: good for
 <ul>
 <li><em>Smaller representation</em></li>
 <li><em>Faster instantiation</em></li>
+<li>Representation supports other optimizations (not implemented yet)
+<ul>
+<li>Early <em>merging</em> of identical specifics</li>
+<li>Emitting non-generic portion of generic only once</li>
+</ul>
+</li>
 </ul>
 
 
@@ -1044,7 +1050,7 @@ entry:
 <p>Result:</p>
 <ul>
 <li>Specifics with the same generic and same overlays lowered to the same function</li>
-<li>Example: <code>Vector(i32*).Size</code> and <code>Vector(f32*).Size</code> are the same function</li>
+<li>Example: <code>Vector(i32*).Size</code> and <code>Vector(String*).Size</code> are the same function</li>
 </ul>
 <div class="fragment">
 <p>Overlay model gives us the information to do this</p>
