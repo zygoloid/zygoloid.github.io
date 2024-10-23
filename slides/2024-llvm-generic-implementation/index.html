@@ -62,7 +62,8 @@ em { color: #ff8; }
 </div>
 <div class="col-container"><div class="col-2">
 <h3 id="richard-smith">Richard Smith</h3>
-<h3 id="zygoloid">@zygoloid</h3>
+<h4 id="zygoloid">@zygoloid</h4>
+<p>Carbon / Google</p>
 </div><div class="col right">
 <h3 id="llvm-developers-meeting-2024">LLVM Developers&rsquo; Meeting 2024</h3>
 </div></div>
@@ -84,6 +85,11 @@ https://zy.golo.id/slides/2024-llvm-generic-implementation
   
 
     <section><h2 id="c-templates-and-carbon-generics">C++ templates and Carbon generics</h2>
+
+
+
+<aside class="notes"><p>Assume this audience knows what C++ templates are</p>
+</aside>
 <pre><code class="language-cpp">template&lt;typename T&gt; T clamp_nonnegative(const T &amp;a) {
   return a &lt; T() ? T() : a;
 }
@@ -96,6 +102,13 @@ https://zy.golo.id/slides/2024-llvm-generic-implementation
 </ul>
 </div>
 </section><section>
+
+
+
+<aside class="notes"><p>Like C++ templates</p>
+<p>Substitution or monomorphization produces what we call a specific analogous to a template instantiation</p>
+<p>Also support checked generics, more like Rust traits</p>
+</aside>
 <h2 id="c-templates-and-carbon-generics-1">C++ templates and Carbon generics</h2>
 <pre><code class="language-carbon">fn ClampNonnegative[template T:! type](a: T) -&gt; T {
   return if a &lt; (0 as T) then 0 as T else a;
@@ -188,8 +201,7 @@ int k = min<int>(1, 2);
 
 
 <aside class="notes"><p>How are C++ templates implemented?</p>
-<p>Not enough time to talk about token soup, will talk about Clang model</p>
-<p>And then tell you about what we&rsquo;re doing in the Carbon toolchain</p>
+<p>Not enough time to talk about token soup</p>
 </aside>
 </section>
 
@@ -283,6 +295,12 @@ Bad:
 
 --></section>
     <section><h3 id="subtree-reuse">Subtree reuse</h3>
+
+
+
+<aside class="notes"><p>Incredibly important to reuse</p>
+<p>This is the largest source of avoidable cost</p>
+</aside>
 <p>Clang <code>TreeTransform</code></p>
 <ul>
 <li>Attempts to reuse non-dependent parts of tree</li>
