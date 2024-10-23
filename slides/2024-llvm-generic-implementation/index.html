@@ -240,8 +240,8 @@ int k = min<int>(1, 2);
 </section><section>
 <h3 id="dependent-parse-trees-3">Dependent parse trees</h3>
 <p>Instantiate: tree transformation builds a new tree</p>
-<pre><code class="language-cpp">template&lt;typename T&gt; T clamp_nonnegative(const T &amp;a) {
-  return a &lt; T() ? T() : a;
+<pre><code class="language-cpp">template&lt;&gt; int clamp_nonnegative&lt;int&gt;(const int &amp;a) {
+  return a &lt; int() ? int() : a;
 }
 </code></pre>
 <pre><code class="language-cpp" data-line-numbers="7,11">FunctionDecl &lt;col:22, line:3:1&gt; line:1:24 clamp_nonnegative 'int (const int &amp;)'
